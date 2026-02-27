@@ -1,64 +1,78 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import translations from "../lib/translations";
-import popularDests from "../lib/destinations";
-
-/* ── Animated Globe ── */
-function Globe() {
-  return (
-    <svg viewBox="0 0 200 200" style={{ width: "100%", height: "100%" }}>
-      <defs>
-        <linearGradient id="grd" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#2A7F62" stopOpacity="0.15" />
-          <stop offset="100%" stopColor="#2A7F62" stopOpacity="0.03" />
-        </linearGradient>
-      </defs>
-      <circle cx="100" cy="100" r="80" fill="url(#grd)" stroke="#2A7F62" strokeOpacity="0.12" strokeWidth="1" />
-      <ellipse cx="100" cy="100" rx="80" ry="30" fill="none" stroke="#2A7F62" strokeOpacity="0.08" strokeWidth="0.8">
-        <animateTransform attributeName="transform" type="rotate" values="0 100 100;360 100 100" dur="20s" repeatCount="indefinite" />
-      </ellipse>
-      <ellipse cx="100" cy="100" rx="55" ry="80" fill="none" stroke="#2A7F62" strokeOpacity="0.08" strokeWidth="0.8">
-        <animateTransform attributeName="transform" type="rotate" values="0 100 100;-360 100 100" dur="25s" repeatCount="indefinite" />
-      </ellipse>
-      <ellipse cx="100" cy="100" rx="30" ry="80" fill="none" stroke="#2A7F62" strokeOpacity="0.06" strokeWidth="0.8" />
-      <line x1="20" y1="100" x2="180" y2="100" stroke="#2A7F62" strokeOpacity="0.06" strokeWidth="0.5" />
-      {[60, 80, 120, 140].map(y => (
-        <line key={y} x1={100 - Math.sqrt(Math.max(0, 6400 - (y-100)**2))} y1={y} x2={100 + Math.sqrt(Math.max(0, 6400 - (y-100)**2))} y2={y} stroke="#2A7F62" strokeOpacity="0.04" strokeWidth="0.5" />
-      ))}
-      <circle r="3" fill="#2A7F62" fillOpacity="0.5">
-        <animateMotion dur="8s" repeatCount="indefinite" path="M20,100 Q100,30 180,100 Q100,170 20,100" />
-      </circle>
-      <circle r="2" fill="#2A7F62" fillOpacity="0.3">
-        <animateMotion dur="12s" repeatCount="indefinite" path="M100,20 Q170,100 100,180 Q30,100 100,20" />
-      </circle>
-    </svg>
-  );
-}
 
 /* ── Scroll Reveal ── */
 function Reveal({ children, delay = 0, style = {} }) {
   const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
+  const [v, setV] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.12 });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setV(true); }, { threshold: 0.1 });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
-  return (
-    <div ref={ref} style={{
-      ...style, opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)",
-      transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s`,
-    }}>{children}</div>
-  );
+  return <div ref={ref} style={{ ...style, opacity: v?1:0, transform: v?"translateY(0)":"translateY(30px)", transition: `all .7s ease ${delay}s` }}>{children}</div>;
 }
 
-const DESTS = popularDests;
+/* ── Data ── */
+const DESTS = [
+  { ar: "دبي", en: "Dubai", flag: "🇦🇪", img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&q=80" },
+  { ar: "إسطنبول", en: "Istanbul", flag: "🇹🇷", img: "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=600&q=80" },
+  { ar: "باريس", en: "Paris", flag: "🇫🇷", img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&q=80" },
+  { ar: "لندن", en: "London", flag: "🇬🇧", img: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&q=80" },
+  { ar: "طوكيو", en: "Tokyo", flag: "🇯🇵", img: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&q=80" },
+  { ar: "بالي", en: "Bali", flag: "🇮🇩", img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80" },
+  { ar: "روما", en: "Rome", flag: "🇮🇹", img: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=600&q=80" },
+  { ar: "برشلونة", en: "Barcelona", flag: "🇪🇸", img: "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=600&q=80" },
+  { ar: "نيويورك", en: "New York", flag: "🇺🇸", img: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=600&q=80" },
+  { ar: "مراكش", en: "Marrakech", flag: "🇲🇦", img: "https://images.unsplash.com/photo-1597212618440-806262de4f6b?w=600&q=80" },
+  { ar: "القاهرة", en: "Cairo", flag: "🇪🇬", img: "https://images.unsplash.com/photo-1572252009286-268acec5ca0a?w=600&q=80" },
+  { ar: "كوالالمبور", en: "Kuala Lumpur", flag: "🇲🇾", img: "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?w=600&q=80" },
+];
 
-const T = translations;
+const heroImages = [
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80",
+  "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1920&q=80",
+  "https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=1920&q=80",
+];
 
-
+const T = {
+  ar: {
+    nav: { plan: "خطط رحلتك", how: "كيف يعمل", lang: "EN" },
+    hero: { badge: "مدعوم بالذكاء الاصطناعي", h1a: "اكتشف العالم", h1b: "بخطة مثالية", desc: "أدخل أي وجهة — نبحث لك عن أفضل الفنادق والمطاعم والأماكن بتقييمات حقيقية ومحدّثة", cta: "ابدأ التخطيط", scroll: "اكتشف المزيد" },
+    stats: [{ v: "500+", l: "وجهة" }, { v: "< 30s", l: "لإنشاء خطة" }, { v: "100%", l: "مجاني" }],
+    how: { title: "كيف يعمل", sub: "ثلاث خطوات", steps: [
+      { n: "01", t: "اختر وجهتك", d: "اكتب أي مدينة في العالم" },
+      { n: "02", t: "حدد المدة", d: "من يوم واحد إلى 10 أيام" },
+      { n: "03", t: "استلم خطتك", d: "جدول + فنادق + مطاعم + ميزانية" },
+    ]},
+    dest: { title: "وجهات مميزة", sub: "اختر وجهتك أو اكتب أي مدينة" },
+    cta: { title: "جاهز للمغامرة؟", desc: "خطة سفر كاملة في ثوانٍ — مجاناً" },
+    planner: { title: "خطط رحلتك", dest: "الوجهة", ph: "اكتب أي مدينة أو دولة...", pop: "اختر وجهة سريعة", days: "عدد الأيام", go: "إنشاء الخطة", loading: "جاري إعداد خطة", searching: "يبحث عن أحدث المعلومات...", err: "حدث خطأ. حاول مرة أخرى." },
+    plan: { badge: "خطة رحلتك", currency: "العملة", weather: "الطقس", best: "أفضل وقت", language: "اللغة", visa: "التأشيرة", tz: "التوقيت", hotels: "الفنادق", night: "ليلة", total: "إجمالي", sched: "الجدول اليومي", arrive: "يوم الوصول", last: "آخر يوم", dayN: "اليوم", am: "صباحاً", pm: "ظهراً", eve: "مساءً", free: "مجاني", budget: "الميزانية", hotelC: "الإقامة", act: "الأنشطة", food: "الطعام", trans: "المواصلات", nights: "ليالي", daysL: "أيام", grand: "الإجمالي", note: "* أسعار تقريبية. لا تشمل الطيران.", tips: "نصائح", attractions: "أبرز المعالم", restaurants: "أفضل المطاعم", src: "خطة مبنية بالذكاء الاصطناعي والبحث المباشر", newTrip: "رحلة جديدة" },
+    tiers: { budget: "اقتصادي", mid: "متوسط", luxury: "فاخر" },
+    footer: "مدعوم بالذكاء الاصطناعي",
+    currLabel: "الأسعار بـ",
+  },
+  en: {
+    nav: { plan: "Plan Trip", how: "How It Works", lang: "عربي" },
+    hero: { badge: "AI-Powered", h1a: "Discover the World", h1b: "With the Perfect Plan", desc: "Enter any destination — we find the best hotels, restaurants, and attractions with real, live ratings", cta: "Start Planning", scroll: "Learn More" },
+    stats: [{ v: "500+", l: "Destinations" }, { v: "< 30s", l: "To Plan" }, { v: "100%", l: "Free" }],
+    how: { title: "How It Works", sub: "Three Steps", steps: [
+      { n: "01", t: "Pick Destination", d: "Type any city in the world" },
+      { n: "02", t: "Set Duration", d: "From 1 day up to 10 days" },
+      { n: "03", t: "Get Your Plan", d: "Schedule + hotels + restaurants + budget" },
+    ]},
+    dest: { title: "Featured Destinations", sub: "Pick one or type any city" },
+    cta: { title: "Ready for Adventure?", desc: "Complete travel plan in seconds — totally free" },
+    planner: { title: "Plan Your Trip", dest: "DESTINATION", ph: "Type any city or country...", pop: "Quick picks", days: "DURATION", go: "Generate Plan", loading: "Preparing plan for", searching: "Searching for the latest info...", err: "Error occurred. Try again." },
+    plan: { badge: "Your Trip Plan", currency: "Currency", weather: "Weather", best: "Best Time", language: "Language", visa: "Visa", tz: "Timezone", hotels: "Hotels", night: "night", total: "total", sched: "Daily Schedule", arrive: "Arrival", last: "Last Day", dayN: "Day", am: "Morning", pm: "Afternoon", eve: "Evening", free: "Free", budget: "Budget", hotelC: "Hotels", act: "Activities", food: "Food", trans: "Transport", nights: "nights", daysL: "days", grand: "Total", note: "* Approximate prices. Flights not included.", tips: "Tips", attractions: "Top Attractions", restaurants: "Top Restaurants", src: "Built with AI & live web search", newTrip: "New Trip" },
+    tiers: { budget: "Budget", mid: "Mid-range", luxury: "Luxury" },
+    footer: "Powered by AI",
+    currLabel: "Prices in",
+  }
+};
 
 export default function TripWall() {
   const [lang, setLang] = useState("ar");
@@ -67,204 +81,171 @@ export default function TripWall() {
   const [days, setDays] = useState(4);
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState(null);
+  const [error, setError] = useState("");
   const [tier, setTier] = useState("mid");
+  const [heroIdx, setHeroIdx] = useState(0);
   const [heroIn, setHeroIn] = useState(false);
-  const [userCurrency, setUserCurrency] = useState({ code: "USD", symbol: "$", name: "دولار أمريكي" });
+  const [cur, setCur] = useState({ code: "USD", sym: "$", name: "USD" });
   const L = T[lang];
   const rtl = lang === "ar";
 
-  useEffect(() => { setTimeout(() => setHeroIn(true), 100); }, []);
+  useEffect(() => { setTimeout(() => setHeroIn(true), 200); }, []);
+  useEffect(() => { const t = setInterval(() => setHeroIdx(i => (i + 1) % heroImages.length), 6000); return () => clearInterval(t); }, []);
 
-  // Auto-detect user's country and currency
   useEffect(() => {
-    const CURRENCIES = {
-      KW: { code: "KWD", symbol: "د.ك", nameAr: "دينار كويتي", nameEn: "Kuwaiti Dinar" },
-      AE: { code: "AED", symbol: "د.إ", nameAr: "درهم إماراتي", nameEn: "UAE Dirham" },
-      SA: { code: "SAR", symbol: "ر.س", nameAr: "ريال سعودي", nameEn: "Saudi Riyal" },
-      QA: { code: "QAR", symbol: "ر.ق", nameAr: "ريال قطري", nameEn: "Qatari Riyal" },
-      BH: { code: "BHD", symbol: "د.ب", nameAr: "دينار بحريني", nameEn: "Bahraini Dinar" },
-      OM: { code: "OMR", symbol: "ر.ع", nameAr: "ريال عماني", nameEn: "Omani Rial" },
-      EG: { code: "EGP", symbol: "ج.م", nameAr: "جنيه مصري", nameEn: "Egyptian Pound" },
-      JO: { code: "JOD", symbol: "د.أ", nameAr: "دينار أردني", nameEn: "Jordanian Dinar" },
-      LB: { code: "LBP", symbol: "ل.ل", nameAr: "ليرة لبنانية", nameEn: "Lebanese Pound" },
-      IQ: { code: "IQD", symbol: "د.ع", nameAr: "دينار عراقي", nameEn: "Iraqi Dinar" },
-      MA: { code: "MAD", symbol: "د.م", nameAr: "درهم مغربي", nameEn: "Moroccan Dirham" },
-      TN: { code: "TND", symbol: "د.ت", nameAr: "دينار تونسي", nameEn: "Tunisian Dinar" },
-      TR: { code: "TRY", symbol: "₺", nameAr: "ليرة تركية", nameEn: "Turkish Lira" },
-      GB: { code: "GBP", symbol: "£", nameAr: "جنيه إسترليني", nameEn: "British Pound" },
-      EU: { code: "EUR", symbol: "€", nameAr: "يورو", nameEn: "Euro" },
-      FR: { code: "EUR", symbol: "€", nameAr: "يورو", nameEn: "Euro" },
-      DE: { code: "EUR", symbol: "€", nameAr: "يورو", nameEn: "Euro" },
-      IT: { code: "EUR", symbol: "€", nameAr: "يورو", nameEn: "Euro" },
-      ES: { code: "EUR", symbol: "€", nameAr: "يورو", nameEn: "Euro" },
-      US: { code: "USD", symbol: "$", nameAr: "دولار أمريكي", nameEn: "US Dollar" },
-      IN: { code: "INR", symbol: "₹", nameAr: "روبية هندية", nameEn: "Indian Rupee" },
-      PK: { code: "PKR", symbol: "₨", nameAr: "روبية باكستانية", nameEn: "Pakistani Rupee" },
-      MY: { code: "MYR", symbol: "RM", nameAr: "رينغيت ماليزي", nameEn: "Malaysian Ringgit" },
-      ID: { code: "IDR", symbol: "Rp", nameAr: "روبية إندونيسية", nameEn: "Indonesian Rupiah" },
-      JP: { code: "JPY", symbol: "¥", nameAr: "ين ياباني", nameEn: "Japanese Yen" },
+    const C = {
+      KW:{c:"KWD",s:"د.ك",a:"دينار كويتي",e:"KWD"},AE:{c:"AED",s:"د.إ",a:"درهم إماراتي",e:"AED"},SA:{c:"SAR",s:"ر.س",a:"ريال سعودي",e:"SAR"},
+      QA:{c:"QAR",s:"ر.ق",a:"ريال قطري",e:"QAR"},BH:{c:"BHD",s:"د.ب",a:"دينار بحريني",e:"BHD"},OM:{c:"OMR",s:"ر.ع",a:"ريال عماني",e:"OMR"},
+      EG:{c:"EGP",s:"ج.م",a:"جنيه مصري",e:"EGP"},JO:{c:"JOD",s:"د.أ",a:"دينار أردني",e:"JOD"},MA:{c:"MAD",s:"د.م",a:"درهم مغربي",e:"MAD"},
+      TR:{c:"TRY",s:"₺",a:"ليرة تركية",e:"TRY"},GB:{c:"GBP",s:"£",a:"جنيه إسترليني",e:"GBP"},
+      FR:{c:"EUR",s:"€",a:"يورو",e:"EUR"},DE:{c:"EUR",s:"€",a:"يورو",e:"EUR"},IT:{c:"EUR",s:"€",a:"يورو",e:"EUR"},ES:{c:"EUR",s:"€",a:"يورو",e:"EUR"},
+      US:{c:"USD",s:"$",a:"دولار",e:"USD"},IN:{c:"INR",s:"₹",a:"روبية",e:"INR"},JP:{c:"JPY",s:"¥",a:"ين",e:"JPY"},MY:{c:"MYR",s:"RM",a:"رينغيت",e:"MYR"},
     };
-    fetch("https://ipapi.co/json/")
-      .then(r => r.json())
-      .then(data => {
-        const cc = data?.country_code;
-        if (cc && CURRENCIES[cc]) {
-          const c = CURRENCIES[cc];
-          setUserCurrency({ code: c.code, symbol: c.symbol, name: lang === "ar" ? c.nameAr : c.nameEn });
-        }
-      })
-      .catch(() => {});
+    fetch("https://ipapi.co/json/").then(r=>r.json()).then(d=>{
+      const cc=d?.country_code; if(cc&&C[cc]){const x=C[cc]; setCur({code:x.c,sym:x.s,name:lang==="ar"?x.a:x.e});}
+    }).catch(()=>{});
   }, [lang]);
 
-  const goPlan = () => { setPage("planner"); window.scrollTo({ top: 0 }); };
-  const goHome = () => { setPlan(null); setDest(""); setPage("landing"); setHeroIn(false); setTimeout(() => setHeroIn(true), 100); };
+  const goPlan = () => { setPage("planner"); window.scrollTo({top:0}); };
+  const goHome = () => { setPlan(null); setDest(""); setError(""); setPage("landing"); setHeroIn(false); setTimeout(()=>setHeroIn(true),200); };
+  const reset = () => { setPlan(null); setDest(""); setDays(4); setTier("mid"); setError(""); };
 
   const generate = async () => {
     if (!dest.trim()) return;
-    setLoading(true); setPlan(null);
+    setLoading(true); setError(""); setPlan(null);
     try {
       const res = await fetch("/api/generate", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ destination: dest.trim(), days, lang, currency: userCurrency.code }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ destination: dest.trim(), days, lang, currency: cur.code }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error");
       setPlan(data.plan);
-    } catch (err) { console.error(err); }
+    } catch(err) { console.error(err); setError(L.planner.err); }
     finally { setLoading(false); }
   };
 
-  const reset = () => { setPlan(null); setDest(""); setDays(4); setTier("mid"); };
-
-  const hotels = plan?.hotels?.[tier] || [];
-  const sched = plan?.schedule || [];
-  const bd = plan?.budgetEstimate?.[tier] || {};
+  const hotels = plan?.hotels?.[tier]||[];
+  const sched = plan?.schedule||[];
+  const bd = plan?.budgetEstimate?.[tier]||{};
   const tot = (bd.hotel||0)+(bd.food||0)+(bd.activities||0)+(bd.transport||0);
-  const dtxt = n => lang==="ar"?(n===1?"يوم واحد":n===2?"يومان":`${n} أيام`):`${n} ${n===1?"day":"days"}`;
-  const W = { maxWidth: 860, margin: "0 auto", padding: "0 32px" };
+  const dt = n => lang==="ar"?(n===1?"يوم واحد":n===2?"يومان":`${n} أيام`):`${n} ${n===1?"day":"days"}`;
+  const P = v => `${cur.sym}${v?.toLocaleString()||0}`;
+  const W = { maxWidth: 900, margin: "0 auto", padding: "0 28px" };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FAFAF8", color: "#1a1a1a", direction: rtl?"rtl":"ltr", fontFamily: "'Tajawal','DM Sans',-apple-system,sans-serif", overflowX: "hidden" }}>
+    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#fff", direction: rtl?"rtl":"ltr", fontFamily: "'Tajawal','DM Sans',-apple-system,sans-serif", overflowX: "hidden" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=DM+Sans:wght@300;400;500;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=Cormorant+Garamond:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
-        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+        @keyframes kenburns{0%{transform:scale(1)}100%{transform:scale(1.08)}}
+        @keyframes fadeSlide{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         input:focus,button:focus{outline:none}
-        ::selection{background:#2A7F62;color:#fff}
-        .glass{background:rgba(250,250,248,.7);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-        .clift{transition:transform .35s cubic-bezier(.2,0,0,1),box-shadow .35s ease}
-        .clift:hover{transform:translateY(-6px);box-shadow:0 16px 48px rgba(42,127,98,.08)}
-        .pill{transition:all .25s cubic-bezier(.2,0,0,1)}
-        .pill:hover{transform:scale(1.04);box-shadow:0 4px 16px rgba(0,0,0,.06)}
-        .sline{width:48px;height:3px;background:#2A7F62;border-radius:2px}
-        ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#ddd;border-radius:3px}
+        ::selection{background:#c9a96e;color:#000}
+        .glow{transition:all .4s cubic-bezier(.2,0,0,1)}
+        .glow:hover{transform:translateY(-5px);box-shadow:0 20px 60px rgba(201,169,110,.12)}
+        .imgcard{position:relative;overflow:hidden;border-radius:16px;cursor:pointer;transition:transform .5s cubic-bezier(.2,0,0,1)}
+        .imgcard:hover{transform:scale(1.02)}
+        .imgcard img{transition:transform .8s cubic-bezier(.2,0,0,1)}
+        .imgcard:hover img{transform:scale(1.1)}
+        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
       `}</style>
 
       {/* NAV */}
-      <nav className="glass" style={{ borderBottom: "1px solid rgba(0,0,0,.06)", position: "sticky", top: 0, zIndex: 100 }}>
+      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(10,10,10,.6)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
         <div style={{ ...W, display: "flex", justifyContent: "space-between", alignItems: "center", height: 64 }}>
           <div onClick={goHome} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#2A7F62,#1a5c45)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14, fontWeight: 800 }}>T</div>
-            <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.5px" }}>TripWall</span>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#c9a96e,#a8874a)", display: "flex", alignItems: "center", justifyContent: "center", color: "#000", fontSize: 14, fontWeight: 800 }}>T</div>
+            <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: "1px" }}>TRIPWALL</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 20, fontSize: 14 }}>
-            <span onClick={goPlan} style={{ color: "#666", cursor: "pointer", fontWeight: 500 }}>{L.nav.plan}</span>
-            {page==="landing" && <span onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })} style={{ color: "#666", cursor: "pointer", fontWeight: 500 }}>{L.nav.how}</span>}
-            <button onClick={() => setLang(lang==="ar"?"en":"ar")} style={{ padding: "7px 16px", borderRadius: 8, border: "1.5px solid #E8E6E2", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#555", fontFamily: "inherit" }}>{L.nav.lang}</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 20, fontSize: 13 }}>
+            <span onClick={goPlan} style={{ color: "rgba(255,255,255,.6)", cursor: "pointer", fontWeight: 500, transition: "color .2s" }}>{L.nav.plan}</span>
+            <button onClick={() => setLang(lang==="ar"?"en":"ar")} style={{ padding: "6px 16px", borderRadius: 6, border: "1px solid rgba(255,255,255,.15)", background: "transparent", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "rgba(255,255,255,.7)", fontFamily: "inherit" }}>{L.nav.lang}</button>
           </div>
         </div>
       </nav>
 
       {/* ═══ LANDING ═══ */}
       {page==="landing" && <>
-        {/* HERO */}
-        <section style={{ position: "relative", overflow: "hidden", minHeight: "88vh", display: "flex", alignItems: "center" }}>
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 70% 20%,rgba(42,127,98,.04) 0%,transparent 60%),radial-gradient(ellipse at 20% 80%,rgba(42,127,98,.03) 0%,transparent 50%)" }} />
-          <div style={{ position: "absolute", top: 40, [rtl?"left":"right"]: 40, width: 120, height: 120, opacity: .12, backgroundImage: "radial-gradient(circle,#2A7F62 1px,transparent 1px)", backgroundSize: "16px 16px" }} />
+        {/* HERO — Full bleed image */}
+        <section style={{ position: "relative", height: "100vh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {heroImages.map((img,i) => (
+            <div key={i} style={{ position: "absolute", inset: 0, opacity: heroIdx===i?1:0, transition: "opacity 1.5s ease", animation: heroIdx===i?"kenburns 8s ease forwards":"none" }}>
+              <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+          ))}
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,.3) 0%, rgba(0,0,0,.6) 60%, rgba(10,10,10,1) 100%)" }} />
+          
+          <div style={{ position: "relative", textAlign: "center", maxWidth: 700, padding: "0 28px", opacity: heroIn?1:0, transform: heroIn?"translateY(0)":"translateY(30px)", transition: "all 1s ease .3s" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 18px", borderRadius: 24, background: "rgba(201,169,110,.12)", border: "1px solid rgba(201,169,110,.25)", marginBottom: 28 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a96e", animation: "pulse 2s infinite" }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#c9a96e", letterSpacing: 2, textTransform: "uppercase" }}>{L.hero.badge}</span>
+            </div>
+            <h1 style={{ fontFamily: "'Cormorant Garamond','Tajawal',serif", fontSize: "clamp(42px,7vw,76px)", fontWeight: 300, lineHeight: 1.1, marginBottom: 20, letterSpacing: "-1px" }}>
+              {L.hero.h1a}<br /><span style={{ fontWeight: 600, color: "#c9a96e" }}>{L.hero.h1b}</span>
+            </h1>
+            <p style={{ fontSize: 17, color: "rgba(255,255,255,.55)", maxWidth: 500, margin: "0 auto 40px", lineHeight: 1.8 }}>{L.hero.desc}</p>
+            <button onClick={goPlan} style={{ padding: "17px 52px", borderRadius: 12, border: "none", fontSize: 16, fontWeight: 700, background: "linear-gradient(135deg,#c9a96e,#a8874a)", color: "#000", cursor: "pointer", fontFamily: "inherit", letterSpacing: .5, transition: "transform .3s" }}>{L.hero.cta}</button>
+          </div>
 
-          <div style={{ ...W, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, alignItems: "center", width: "100%" }}>
-            <div style={{ order: rtl?2:1 }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 24, background: "linear-gradient(135deg,rgba(42,127,98,.08),rgba(42,127,98,.04))", border: "1px solid rgba(42,127,98,.12)", marginBottom: 24, opacity: heroIn?1:0, transform: heroIn?"translateY(0)":"translateY(16px)", transition: "all .6s ease .1s" }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#2A7F62", animation: "pulse 2s infinite" }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#2A7F62", letterSpacing: 1.5, textTransform: "uppercase" }}>{L.hero.badge}</span>
-              </div>
-              <h1 style={{ fontFamily: "'Playfair Display','Tajawal',serif", fontSize: "clamp(40px,5.5vw,64px)", fontWeight: 600, lineHeight: 1.1, marginBottom: 20, letterSpacing: "-1px", opacity: heroIn?1:0, transform: heroIn?"translateY(0)":"translateY(24px)", transition: "all .7s ease .2s" }}>
-                {L.hero.h1a}<br /><span style={{ background: "linear-gradient(135deg,#2A7F62,#1a5c45)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{L.hero.h1b}</span>
-              </h1>
-              <p style={{ fontSize: 17, color: "#777", maxWidth: 420, lineHeight: 1.85, marginBottom: 36, opacity: heroIn?1:0, transform: heroIn?"translateY(0)":"translateY(20px)", transition: "all .7s ease .35s" }}>{L.hero.desc}</p>
-              <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap", opacity: heroIn?1:0, transform: heroIn?"translateY(0)":"translateY(16px)", transition: "all .7s ease .5s" }}>
-                <button onClick={goPlan} style={{ padding: "16px 40px", borderRadius: 12, border: "none", fontSize: 16, fontWeight: 700, background: "#1a1a1a", color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>{L.hero.cta}</button>
-                <span onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })} style={{ fontSize: 14, color: "#999", cursor: "pointer", fontWeight: 500 }}>{L.hero.scroll} ↓</span>
-              </div>
-            </div>
-            <div style={{ order: rtl?1:2, position: "relative", display: "flex", justifyContent: "center", opacity: heroIn?1:0, transform: heroIn?"scale(1)":"scale(0.85)", transition: "all .9s cubic-bezier(.2,0,0,1) .3s" }}>
-              <div style={{ width: "min(380px,90%)", aspectRatio: "1", animation: "float 6s ease-in-out infinite" }}><Globe /></div>
-              {[{ emoji: "🗼", name: rtl?"باريس":"Paris", top: "8%", right: "5%", d: "0s" },
-                { emoji: "⛩️", name: rtl?"طوكيو":"Tokyo", bottom: "15%", left: "0%", d: "1s" },
-                { emoji: "🏙️", name: rtl?"دبي":"Dubai", top: "55%", right: "-5%", d: "2s" }
-              ].map((c, i) => (
-                <div key={i} style={{ position: "absolute", ...(c.top?{top:c.top}:{}), ...(c.bottom?{bottom:c.bottom}:{}), ...(c.left?{left:c.left}:{}), ...(c.right?{right:c.right}:{}), background: "#fff", borderRadius: 12, padding: "10px 16px", boxShadow: "0 4px 20px rgba(0,0,0,.06)", display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, animation: `float 4s ease-in-out ${c.d} infinite`, border: "1px solid rgba(0,0,0,.04)" }}>
-                  <span style={{ fontSize: 20 }}>{c.emoji}</span> {c.name}
-                </div>
-              ))}
-            </div>
+          {/* Scroll indicator */}
+          <div style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, opacity: .4 }}>
+            <span style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase" }}>{L.hero.scroll}</span>
+            <div style={{ width: 1, height: 40, background: "linear-gradient(to bottom, #fff, transparent)" }} />
           </div>
         </section>
 
         {/* STATS */}
-        <Reveal>
-          <section style={{ borderTop: "1px solid #EEECE8", borderBottom: "1px solid #EEECE8", background: "#fff" }}>
-            <div style={{ ...W, display: "grid", gridTemplateColumns: "repeat(3,1fr)" }}>
-              {L.stats.map((s,i) => (
-                <div key={i} style={{ padding: "36px 0", textAlign: "center", borderInlineStart: i>0?"1px solid #EEECE8":"none" }}>
-                  <div style={{ fontSize: 36, fontWeight: 800, background: "linear-gradient(135deg,#2A7F62,#1a5c45)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6 }}>{s.val}</div>
-                  <div style={{ fontSize: 14, color: "#999" }}>{s.l}</div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </Reveal>
+        <Reveal><section style={{ borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+          <div style={{ ...W, display: "grid", gridTemplateColumns: "repeat(3,1fr)", padding: "40px 28px" }}>
+            {L.stats.map((s,i) => (
+              <div key={i} style={{ textAlign: "center", borderInlineStart: i>0?"1px solid rgba(255,255,255,.06)":"none" }}>
+                <div style={{ fontSize: 36, fontWeight: 300, color: "#c9a96e", fontFamily: "'Cormorant Garamond',serif", marginBottom: 4 }}>{s.v}</div>
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,.35)" }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+        </section></Reveal>
 
-        {/* HOW */}
-        <section id="how" style={{ padding: "80px 0" }}>
+        {/* DESTINATIONS with photos */}
+        <section style={{ padding: "80px 0" }}>
           <div style={W}>
-            <Reveal><div style={{ textAlign: "center", marginBottom: 56 }}>
-              <div className="sline" style={{ margin: "0 auto 16px" }} />
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 3, marginBottom: 10 }}>{L.how.sub}</div>
-              <h2 style={{ fontFamily: "'Playfair Display','Tajawal',serif", fontSize: 40, fontWeight: 600 }}>{L.how.title}</h2>
+            <Reveal><div style={{ textAlign: "center", marginBottom: 48 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#c9a96e", letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 }}>{L.dest.sub}</div>
+              <h2 style={{ fontFamily: "'Cormorant Garamond','Tajawal',serif", fontSize: 40, fontWeight: 400 }}>{L.dest.title}</h2>
             </div></Reveal>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20 }}>
-              {L.how.steps.map((s,i) => (
-                <Reveal key={i} delay={i*.12}><div className="clift" style={{ background: "#fff", border: "1px solid #EEECE8", borderRadius: 20, padding: "36px 28px", position: "relative", overflow: "hidden", height: "100%" }}>
-                  <div style={{ position: "absolute", top: -8, [rtl?"right":"left"]: -4, fontSize: 96, fontWeight: 800, color: "rgba(42,127,98,.04)", fontFamily: "'DM Sans'" }}>{s.n}</div>
-                  <div style={{ position: "relative" }}>
-                    <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg,rgba(42,127,98,.1),rgba(42,127,98,.04))", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-                      <span style={{ fontSize: 20, fontWeight: 800, color: "#2A7F62" }}>{s.n}</span>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 14 }}>
+              {DESTS.map((d,i) => (
+                <Reveal key={d.en} delay={i*.04}>
+                  <div className="imgcard" onClick={() => { setDest(d[lang]); goPlan(); }} style={{ height: 220 }}>
+                    <img src={d.img} alt={d.en} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 60%)" }} />
+                    <div style={{ position: "absolute", bottom: 16, left: 16, right: 16 }}>
+                      <div style={{ fontSize: 16, fontWeight: 700 }}>{d.flag} {d[lang]}</div>
                     </div>
-                    <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{s.t}</div>
-                    <div style={{ fontSize: 14, color: "#888", lineHeight: 1.75 }}>{s.d}</div>
                   </div>
-                </div></Reveal>
+                </Reveal>
               ))}
             </div>
           </div>
         </section>
 
-        {/* FEATURES */}
-        <section style={{ padding: "0 0 80px" }}>
+        {/* HOW IT WORKS */}
+        <section id="how" style={{ padding: "80px 0", background: "rgba(255,255,255,.02)" }}>
           <div style={W}>
-            <Reveal><div style={{ textAlign: "center", marginBottom: 48 }}>
-              <div className="sline" style={{ margin: "0 auto 16px" }} />
-              <h2 style={{ fontFamily: "'Playfair Display','Tajawal',serif", fontSize: 40, fontWeight: 600 }}>{L.features.title}</h2>
+            <Reveal><div style={{ textAlign: "center", marginBottom: 56 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#c9a96e", letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 }}>{L.how.sub}</div>
+              <h2 style={{ fontFamily: "'Cormorant Garamond','Tajawal',serif", fontSize: 40, fontWeight: 400 }}>{L.how.title}</h2>
             </div></Reveal>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 16 }}>
-              {L.features.items.map((f,i) => (
-                <Reveal key={i} delay={i*.08}><div className="clift" style={{ background: "#fff", border: "1px solid #EEECE8", borderRadius: 18, padding: "28px 24px", height: "100%" }}>
-                  <div style={{ width: 52, height: 52, borderRadius: 14, background: "#FAFAF8", border: "1px solid #EEECE8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, marginBottom: 16 }}>{f.icon}</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{f.t}</div>
-                  <div style={{ fontSize: 13, color: "#888", lineHeight: 1.8 }}>{f.d}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20 }}>
+              {L.how.steps.map((s,i) => (
+                <Reveal key={i} delay={i*.1}><div className="glow" style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 20, padding: "36px 28px" }}>
+                  <div style={{ fontSize: 48, fontWeight: 300, color: "rgba(201,169,110,.2)", fontFamily: "'Cormorant Garamond',serif", marginBottom: 16 }}>{s.n}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{s.t}</div>
+                  <div style={{ fontSize: 14, color: "rgba(255,255,255,.4)", lineHeight: 1.7 }}>{s.d}</div>
                 </div></Reveal>
               ))}
             </div>
@@ -272,218 +253,210 @@ export default function TripWall() {
         </section>
 
         {/* CTA */}
-        <Reveal>
-          <section style={{ margin: "0 32px 80px", borderRadius: 24, padding: "64px 40px", background: "linear-gradient(135deg,#111,#1a2a22)", color: "#fff", textAlign: "center", position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 30% 50%,rgba(42,127,98,.15) 0%,transparent 50%)" }} />
-            <div style={{ position: "relative" }}>
-              <h2 style={{ fontFamily: "'Playfair Display','Tajawal',serif", fontSize: 36, fontWeight: 600, marginBottom: 14 }}>{L.cta.title}</h2>
-              <p style={{ color: "rgba(255,255,255,.5)", marginBottom: 32, fontSize: 16, maxWidth: 400, margin: "0 auto 32px" }}>{L.cta.desc}</p>
-              <button onClick={goPlan} style={{ padding: "16px 48px", borderRadius: 12, border: "2px solid rgba(255,255,255,.2)", fontSize: 16, fontWeight: 700, background: "rgba(255,255,255,.08)", color: "#fff", cursor: "pointer", fontFamily: "inherit", backdropFilter: "blur(8px)" }}>{L.hero.cta}</button>
-            </div>
-          </section>
-        </Reveal>
+        <Reveal><section style={{ position: "relative", margin: "0 28px 80px", borderRadius: 24, overflow: "hidden", minHeight: 320, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <img src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1200&q=80" alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.65)" }} />
+          <div style={{ position: "relative", textAlign: "center", padding: "60px 28px" }}>
+            <h2 style={{ fontFamily: "'Cormorant Garamond','Tajawal',serif", fontSize: 38, fontWeight: 400, marginBottom: 14 }}>{L.cta.title}</h2>
+            <p style={{ color: "rgba(255,255,255,.5)", marginBottom: 32, fontSize: 16 }}>{L.cta.desc}</p>
+            <button onClick={goPlan} style={{ padding: "16px 48px", borderRadius: 12, border: "2px solid rgba(201,169,110,.4)", fontSize: 16, fontWeight: 700, background: "rgba(201,169,110,.1)", color: "#c9a96e", cursor: "pointer", fontFamily: "inherit", backdropFilter: "blur(8px)" }}>{L.hero.cta}</button>
+          </div>
+        </section></Reveal>
       </>}
 
       {/* ═══ PLANNER ═══ */}
       {page==="planner" && !plan && !loading && (
-        <div style={{ ...W, paddingTop: 56, paddingBottom: 60 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}><div className="sline" /><span style={{ fontSize: 12, fontWeight: 700, color: "#2A7F62", textTransform: "uppercase", letterSpacing: 2 }}>{L.planner.title}</span></div>
-          <h1 style={{ fontFamily: "'Playfair Display','Tajawal',serif", fontSize: 42, fontWeight: 600, marginBottom: 8, lineHeight: 1.15 }}>{L.hero.h1a}, <span style={{ color: "#ccc" }}>{L.hero.h1b}</span></h1>
-          <p style={{ color: "#999", fontSize: 15, marginBottom: 44, maxWidth: 460 }}>{L.hero.desc}</p>
+        <div style={{ ...W, paddingTop: 100, paddingBottom: 60 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#c9a96e", letterSpacing: 3, textTransform: "uppercase", marginBottom: 12 }}>{L.planner.title}</div>
+          <h1 style={{ fontFamily: "'Cormorant Garamond','Tajawal',serif", fontSize: 44, fontWeight: 400, marginBottom: 8, lineHeight: 1.15 }}>{L.hero.h1a}, <span style={{ color: "rgba(255,255,255,.25)" }}>{L.hero.h1b}</span></h1>
+          <p style={{ color: "rgba(255,255,255,.35)", fontSize: 15, marginBottom: 44, maxWidth: 460 }}>{L.hero.desc}</p>
 
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", letterSpacing: 2, marginBottom: 10, textTransform: "uppercase" }}>{L.planner.dest}</div>
-            <input value={dest} onChange={e => setDest(e.target.value)} onKeyDown={e => e.key==="Enter" && generate()} placeholder={L.planner.ph}
-              style={{ width: "100%", maxWidth: 480, padding: "16px 20px", borderRadius: 14, border: "2px solid #EEECE8", fontSize: 17, fontFamily: "inherit", color: "#111", background: "#fff", direction: rtl?"rtl":"ltr", boxShadow: "0 2px 12px rgba(0,0,0,.02)", transition: "all .25s" }}
-              onFocus={e => { e.target.style.borderColor="#2A7F62"; e.target.style.boxShadow="0 0 0 4px rgba(42,127,98,.08)"; }}
-              onBlur={e => { e.target.style.borderColor="#EEECE8"; e.target.style.boxShadow="0 2px 12px rgba(0,0,0,.02)"; }} />
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.25)", letterSpacing: 2, marginBottom: 10, textTransform: "uppercase" }}>{L.planner.dest}</div>
+            <input value={dest} onChange={e=>setDest(e.target.value)} onKeyDown={e=>e.key==="Enter"&&generate()} placeholder={L.planner.ph}
+              style={{ width: "100%", maxWidth: 480, padding: "16px 20px", borderRadius: 12, border: "1px solid rgba(255,255,255,.1)", fontSize: 17, fontFamily: "inherit", color: "#fff", background: "rgba(255,255,255,.04)", direction: rtl?"rtl":"ltr", transition: "all .3s" }}
+              onFocus={e=>{e.target.style.borderColor="rgba(201,169,110,.4)";e.target.style.background="rgba(255,255,255,.06)"}}
+              onBlur={e=>{e.target.style.borderColor="rgba(255,255,255,.1)";e.target.style.background="rgba(255,255,255,.04)"}} />
           </div>
           <div style={{ marginBottom: 40 }}>
-            <div style={{ fontSize: 11, color: "#ccc", marginBottom: 10 }}>{L.planner.pop}</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,.2)", marginBottom: 10 }}>{L.planner.pop}</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {DESTS.map(d => (
-                <button key={d.en} className="pill" onClick={() => setDest(d[lang])} style={{ padding: "8px 18px", borderRadius: 24, fontSize: 13, cursor: "pointer", border: dest===d[lang]?"1.5px solid #1a1a1a":"1px solid #E8E6E2", background: dest===d[lang]?"#1a1a1a":"#fff", color: dest===d[lang]?"#fff":"#666", fontFamily: "inherit" }}>{d.flag} {d[lang]}</button>
+                <button key={d.en} onClick={()=>setDest(d[lang])} style={{ padding: "8px 16px", borderRadius: 20, fontSize: 13, cursor: "pointer", border: dest===d[lang]?"1px solid #c9a96e":"1px solid rgba(255,255,255,.08)", background: dest===d[lang]?"rgba(201,169,110,.15)":"rgba(255,255,255,.03)", color: dest===d[lang]?"#c9a96e":"rgba(255,255,255,.5)", fontFamily: "inherit", transition: "all .2s" }}>{d.flag} {d[lang]}</button>
               ))}
             </div>
           </div>
+
           <div style={{ marginBottom: 48 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>{L.planner.days}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.25)", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>{L.planner.days}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <button onClick={() => setDays(Math.max(1,days-1))} style={{ width: 46, height: 46, borderRadius: 12, border: "1.5px solid #E8E6E2", background: "#fff", fontSize: 22, cursor: "pointer", color: "#444", fontFamily: "inherit" }}>−</button>
-              <span style={{ fontSize: 42, fontWeight: 800, minWidth: 55, textAlign: "center" }}>{days}</span>
-              <button onClick={() => setDays(Math.min(10,days+1))} style={{ width: 46, height: 46, borderRadius: 12, border: "1.5px solid #E8E6E2", background: "#fff", fontSize: 22, cursor: "pointer", color: "#444", fontFamily: "inherit" }}>+</button>
-              <span style={{ fontSize: 15, color: "#aaa" }}>{dtxt(days)}</span>
+              <button onClick={()=>setDays(Math.max(1,days-1))} style={{ width: 46, height: 46, borderRadius: 10, border: "1px solid rgba(255,255,255,.1)", background: "rgba(255,255,255,.03)", fontSize: 22, cursor: "pointer", color: "#fff", fontFamily: "inherit" }}>−</button>
+              <span style={{ fontSize: 42, fontWeight: 300, minWidth: 55, textAlign: "center", fontFamily: "'Cormorant Garamond',serif" }}>{days}</span>
+              <button onClick={()=>setDays(Math.min(10,days+1))} style={{ width: 46, height: 46, borderRadius: 10, border: "1px solid rgba(255,255,255,.1)", background: "rgba(255,255,255,.03)", fontSize: 22, cursor: "pointer", color: "#fff", fontFamily: "inherit" }}>+</button>
+              <span style={{ fontSize: 14, color: "rgba(255,255,255,.3)" }}>{dt(days)}</span>
             </div>
           </div>
-          <button onClick={generate} disabled={!dest.trim()} style={{ padding: "17px 56px", borderRadius: 14, border: "none", fontSize: 17, fontWeight: 700, background: dest.trim()?"#1a1a1a":"#eee", color: dest.trim()?"#fff":"#bbb", cursor: dest.trim()?"pointer":"not-allowed", fontFamily: "inherit" }}>{L.planner.go}</button>
 
-          {/* Currency indicator */}
-          <div style={{ marginTop: 16, display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "#E8F5EF", borderRadius: 8, fontSize: 12, color: "#2A7F62", fontWeight: 500 }}>
-            💱 {lang === "ar" ? "الأسعار ستظهر بـ" : "Prices shown in"} <span style={{ fontWeight: 700 }}>{userCurrency.name} ({userCurrency.symbol})</span>
-          </div>
+          <button onClick={generate} disabled={!dest.trim()} style={{ padding: "17px 56px", borderRadius: 12, border: "none", fontSize: 17, fontWeight: 700, background: dest.trim()?"linear-gradient(135deg,#c9a96e,#a8874a)":"rgba(255,255,255,.06)", color: dest.trim()?"#000":"rgba(255,255,255,.2)", cursor: dest.trim()?"pointer":"not-allowed", fontFamily: "inherit" }}>{L.planner.go}</button>
+
+          <div style={{ marginTop: 16, fontSize: 12, color: "rgba(255,255,255,.2)" }}>💱 {L.currLabel} <span style={{ color: "#c9a96e", fontWeight: 600 }}>{cur.name} ({cur.sym})</span></div>
+
+          {error && <div style={{ marginTop: 20, padding: "14px 18px", background: "rgba(220,38,38,.1)", border: "1px solid rgba(220,38,38,.2)", borderRadius: 12, color: "#ef4444", fontSize: 14 }}>{error}</div>}
         </div>
       )}
 
       {/* LOADING */}
       {page==="planner" && loading && (
-        <div style={{ ...W, textAlign: "center", padding: "120px 32px" }}>
-          <div style={{ width: 40, height: 40, border: "3px solid #eee", borderTopColor: "#2A7F62", borderRadius: "50%", animation: "spin .7s linear infinite", margin: "0 auto 28px" }} />
-          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>{L.planner.loading} {dest}</div>
-          <div style={{ fontSize: 14, color: "#999", animation: "pulse 2s infinite" }}>{L.planner.searching}</div>
+        <div style={{ ...W, textAlign: "center", padding: "160px 28px" }}>
+          <div style={{ width: 40, height: 40, border: "2px solid rgba(255,255,255,.1)", borderTopColor: "#c9a96e", borderRadius: "50%", animation: "spin .7s linear infinite", margin: "0 auto 28px" }} />
+          <div style={{ fontSize: 18, fontWeight: 500, marginBottom: 10, fontFamily: "'Cormorant Garamond',serif" }}>{L.planner.loading} {dest}</div>
+          <div style={{ fontSize: 14, color: "rgba(255,255,255,.3)", animation: "pulse 2s infinite" }}>{L.planner.searching}</div>
         </div>
       )}
 
-      {/* RESULTS */}
+      {/* ═══ RESULTS ═══ */}
       {page==="planner" && plan && !loading && (
-        <div style={W}>
-          <Reveal><div style={{ padding: "48px 0 36px", borderBottom: "1px solid #EEECE8" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><div className="sline" /><span style={{ fontSize: 12, fontWeight: 600, color: "#2A7F62", textTransform: "uppercase", letterSpacing: 2 }}>{L.plan.badge}</span></div>
-            <h2 style={{ fontFamily: "'Playfair Display','Tajawal',serif", fontSize: 42, fontWeight: 600, marginBottom: 6 }}>{plan.flag} {plan.destination}</h2>
-            <p style={{ fontSize: 16, color: "#888" }}>{dtxt(sched.length)} • {plan.country}</p>
+        <div style={{ ...W, paddingTop: 90 }}>
+          <Reveal><div style={{ padding: "0 0 32px", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#c9a96e", letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 }}>{L.plan.badge}</div>
+            <h2 style={{ fontFamily: "'Cormorant Garamond','Tajawal',serif", fontSize: 44, fontWeight: 400, marginBottom: 6 }}>{plan.flag} {plan.destination}</h2>
+            <p style={{ fontSize: 15, color: "rgba(255,255,255,.35)" }}>{dt(sched.length)} • {plan.country}</p>
           </div></Reveal>
 
-          <Reveal delay={.1}><div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", borderBottom: "1px solid #EEECE8" }}>
-            {[{l:L.plan.currency,v:plan.currency},{l:L.plan.weather,v:plan.weather},{l:L.plan.best,v:plan.bestTime},{l:L.plan.language,v:plan.language},{l:L.plan.visa,v:plan.visa},{l:L.plan.tz,v:plan.timezone}].map((x,i) => (
-              <div key={i} style={{ padding: "20px 6px", borderInlineStart: i%3?"1px solid #f0f0f0":"none" }}>
-                <div style={{ fontSize: 10, color: "#bbb", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>{x.l}</div>
-                <div style={{ fontSize: 13, color: "#333", fontWeight: 500 }}>{x.v}</div>
+          {/* Quick Info */}
+          <Reveal delay={.1}><div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", padding: "20px 0", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+            {[{l:L.plan.currency,v:plan.currency},{l:L.plan.weather,v:plan.weather},{l:L.plan.best,v:plan.bestTime},{l:L.plan.language,v:plan.language},{l:L.plan.visa,v:plan.visa},{l:L.plan.tz,v:plan.timezone}].map((x,i)=>(
+              <div key={i} style={{ padding: "14px 6px", borderInlineStart: i%3?"1px solid rgba(255,255,255,.04)":"none" }}>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,.2)", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 4 }}>{x.l}</div>
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,.7)" }}>{x.v}</div>
               </div>
             ))}
           </div></Reveal>
 
           {/* Hotels */}
-          <Reveal delay={.15}><div style={{ padding: "36px 0", borderBottom: "1px solid #EEECE8" }}>
+          <Reveal delay={.15}><div style={{ padding: "32px 0", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2 }}>{L.plan.hotels}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.2)", textTransform: "uppercase", letterSpacing: 2 }}>{L.plan.hotels}</div>
               <div style={{ display: "flex", gap: 6 }}>
-                {["budget","mid","luxury"].map(ti => (
-                  <button key={ti} onClick={() => setTier(ti)} style={{ padding: "6px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", border: tier===ti?"1.5px solid #1a1a1a":"1px solid #E8E6E2", background: tier===ti?"#1a1a1a":"#fff", color: tier===ti?"#fff":"#888", fontFamily: "inherit" }}>{L.tiers[ti]}</button>
+                {["budget","mid","luxury"].map(ti=>(
+                  <button key={ti} onClick={()=>setTier(ti)} style={{ padding: "6px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", border: tier===ti?"1px solid #c9a96e":"1px solid rgba(255,255,255,.08)", background: tier===ti?"rgba(201,169,110,.12)":"transparent", color: tier===ti?"#c9a96e":"rgba(255,255,255,.4)", fontFamily: "inherit" }}>{L.tiers[ti]}</button>
                 ))}
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 14 }}>
-              {hotels.map((h,i) => (
-                <div key={i} className="clift" style={{ border: "1px solid #EEECE8", borderRadius: 16, padding: 22, background: "#fff" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 3 }}>{h.name}</div>
-                    {h.rating && <div style={{ fontSize: 11, fontWeight: 700, color: "#2A7F62", background: "#E8F5EF", padding: "3px 8px", borderRadius: 6, flexShrink: 0 }}>{h.rating}</div>}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 12 }}>
+              {hotels.map((h,i)=>(
+                <div key={i} className="glow" style={{ border: "1px solid rgba(255,255,255,.06)", borderRadius: 14, padding: 20, background: "rgba(255,255,255,.02)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>{h.name}</div>
+                    {h.rating && <div style={{ fontSize: 10, fontWeight: 700, color: "#c9a96e", background: "rgba(201,169,110,.1)", padding: "2px 7px", borderRadius: 5, flexShrink: 0 }}>{h.rating}</div>}
                   </div>
-                  <div style={{ fontSize: 12, color: "#999", marginBottom: 14 }}>{h.area}{h.desc?` — ${h.desc}`:""}</div>
-                  <span style={{ fontSize: 24, fontWeight: 800 }}>{userCurrency.symbol}{h.pricePerNight}</span><span style={{ fontSize: 12, color: "#bbb" }}> / {L.plan.night}</span>
-                  <div style={{ fontSize: 12, color: "#aaa", marginTop: 3 }}>{userCurrency.symbol}{(h.pricePerNight*days).toLocaleString()} {L.plan.total}</div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,.3)", marginBottom: 14 }}>{h.area}{h.desc?` — ${h.desc}`:""}</div>
+                  <span style={{ fontSize: 22, fontWeight: 700, color: "#c9a96e" }}>{P(h.pricePerNight)}</span><span style={{ fontSize: 11, color: "rgba(255,255,255,.2)" }}> / {L.plan.night}</span>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,.15)", marginTop: 3 }}>{P(h.pricePerNight*days)} {L.plan.total}</div>
                 </div>
               ))}
             </div>
           </div></Reveal>
 
-          {/* Schedule */}
-          <div style={{ padding: "36px 0", borderBottom: "1px solid #EEECE8" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 22 }}>{L.plan.sched}</div>
-            {sched.map((d,idx) => (
-              <Reveal key={idx} delay={idx*.06}>
-                <div style={{ marginBottom: 26, paddingBottom: 26, borderBottom: idx<sched.length-1?"1px solid #f5f5f3":"none" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg,#1a1a1a,#333)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 16, flexShrink: 0 }}>{d.day}</div>
-                    <div><div style={{ fontSize: 17, fontWeight: 700 }}>{d.title}</div><div style={{ fontSize: 12, color: "#bbb" }}>{idx===0?L.plan.arrive:idx===sched.length-1?L.plan.last:`${L.plan.dayN} ${idx+1}`}</div></div>
+          {/* Top Attractions */}
+          {plan.topAttractions?.length>0 && <Reveal delay={.1}><div style={{ padding: "32px 0", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.2)", textTransform: "uppercase", letterSpacing: 2, marginBottom: 18 }}>{L.plan.attractions}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 12 }}>
+              {plan.topAttractions.map((a,i)=>(
+                <div key={i} className="glow" style={{ border: "1px solid rgba(255,255,255,.06)", borderRadius: 14, padding: 18, background: "rgba(255,255,255,.02)" }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{a.name}</div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,.3)", lineHeight: 1.6, marginBottom: 10 }}>{a.desc}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 12, color: "#c9a96e", fontWeight: 600 }}>{a.cost>0?P(a.cost):L.plan.free}</span>
+                    {a.duration && <span style={{ fontSize: 11, color: "rgba(255,255,255,.2)" }}>⏱ {a.duration}</span>}
                   </div>
-                  <div style={{ display: "grid", gap: 1, background: "#f0efed", borderRadius: 14, overflow: "hidden" }}>
-                    {[{i:"☀️",l:L.plan.am,d:d.morning},{i:"☁️",l:L.plan.pm,d:d.afternoon},{i:"🌙",l:L.plan.eve,d:d.evening}].map((p,pi) => (
-                      <div key={pi} style={{ display: "flex", gap: 14, padding: "15px 18px", background: "#fff", alignItems: "flex-start" }}>
-                        <span style={{ fontSize: 18, marginTop: 1 }}>{p.i}</span>
-                        <div style={{ flex: 1 }}><div style={{ fontSize: 10, color: "#bbb", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>{p.l}</div><div style={{ fontSize: 14, color: "#222", lineHeight: 1.65 }}>{p.d?.activity||p.d}</div></div>
-                        <div style={{ fontSize: 12, color: p.d?.cost>0?"#2A7F62":"#ddd", fontWeight: 600, marginTop: 16 }}>{p.d?.cost>0?`~${userCurrency.symbol}${p.d.cost}`:L.plan.free}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {d.restaurant && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 16px", background: "#fff", border: "1px solid #EEECE8", borderRadius: 10, fontSize: 13, color: "#666" }}>🍽️ <span style={{ fontWeight: 600 }}>{d.restaurant.name}</span> <span style={{ color: "#ddd" }}>•</span> <span style={{ color: "#999" }}>{d.restaurant.cuisine}</span> <span style={{ color: "#2A7F62", fontWeight: 600 }}>{d.restaurant.priceLevel}</span> {d.restaurant.rating && <><span style={{ color: "#ddd" }}>•</span> <span style={{ color: "#f59e0b", fontWeight: 600 }}>★ {d.restaurant.rating}</span></>}</div>}
                 </div>
-              </Reveal>
+              ))}
+            </div>
+          </div></Reveal>}
+
+          {/* Schedule */}
+          <div style={{ padding: "32px 0", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.2)", textTransform: "uppercase", letterSpacing: 2, marginBottom: 22 }}>{L.plan.sched}</div>
+            {sched.map((d,idx)=>(
+              <Reveal key={idx} delay={idx*.05}><div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: idx<sched.length-1?"1px solid rgba(255,255,255,.04)":"none" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg,#c9a96e,#a8874a)", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 16, flexShrink: 0 }}>{d.day||idx+1}</div>
+                  <div><div style={{ fontSize: 17, fontWeight: 700 }}>{d.title}</div><div style={{ fontSize: 12, color: "rgba(255,255,255,.2)" }}>{idx===0?L.plan.arrive:idx===sched.length-1?L.plan.last:`${L.plan.dayN} ${idx+1}`}</div></div>
+                </div>
+                <div style={{ display: "grid", gap: 1, background: "rgba(255,255,255,.03)", borderRadius: 14, overflow: "hidden" }}>
+                  {[{i:"☀️",l:L.plan.am,d:d.morning},{i:"☁️",l:L.plan.pm,d:d.afternoon},{i:"🌙",l:L.plan.eve,d:d.evening}].map((p,pi)=>(
+                    <div key={pi} style={{ display: "flex", gap: 14, padding: "14px 18px", background: "rgba(10,10,10,.8)", alignItems: "flex-start" }}>
+                      <span style={{ fontSize: 18, marginTop: 1 }}>{p.i}</span>
+                      <div style={{ flex: 1 }}><div style={{ fontSize: 10, color: "rgba(255,255,255,.2)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>{p.l}</div><div style={{ fontSize: 14, color: "rgba(255,255,255,.7)", lineHeight: 1.6 }}>{p.d?.activity||p.d}</div></div>
+                      <div style={{ fontSize: 12, color: p.d?.cost>0?"#c9a96e":"rgba(255,255,255,.1)", fontWeight: 600, marginTop: 14 }}>{p.d?.cost>0?`~${P(p.d.cost)}`:L.plan.free}</div>
+                    </div>
+                  ))}
+                </div>
+                {d.restaurant && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 16px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 10, fontSize: 13, color: "rgba(255,255,255,.5)" }}>🍽️ <span style={{ fontWeight: 600, color: "#fff" }}>{d.restaurant.name}</span> <span style={{ color: "rgba(255,255,255,.1)" }}>•</span> {d.restaurant.cuisine} <span style={{ color: "#c9a96e", fontWeight: 600 }}>{d.restaurant.priceLevel}</span> {d.restaurant.rating && <><span style={{ color: "rgba(255,255,255,.1)" }}>•</span> <span style={{ color: "#f59e0b" }}>★ {d.restaurant.rating}</span></>}</div>}
+              </div></Reveal>
             ))}
           </div>
 
-          {/* Top Attractions */}
-          {plan.topAttractions && plan.topAttractions.length > 0 && (
-            <Reveal delay={.1}><div style={{ padding: "36px 0", borderBottom: "1px solid #EEECE8" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 18 }}>{lang==="ar"?"أفضل المعالم السياحية":"Top Attractions"}</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 12 }}>
-                {plan.topAttractions.map((a,i) => (
-                  <div key={i} className="clift" style={{ border: "1px solid #EEECE8", borderRadius: 14, padding: 18, background: "#fff" }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{a.name}</div>
-                    <div style={{ fontSize: 12, color: "#888", lineHeight: 1.6, marginBottom: 10 }}>{a.desc}</div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 12, color: "#2A7F62", fontWeight: 600 }}>{a.cost > 0 ? `${userCurrency.symbol}${a.cost}` : (lang==="ar"?"مجاني":"Free")}</span>
-                      {a.duration && <span style={{ fontSize: 11, color: "#bbb" }}>⏱ {a.duration}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div></Reveal>
-          )}
-
           {/* Top Restaurants */}
-          {plan.topRestaurants && plan.topRestaurants.length > 0 && (
-            <Reveal delay={.1}><div style={{ padding: "36px 0", borderBottom: "1px solid #EEECE8" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 18 }}>{lang==="ar"?"أفضل المطاعم":"Top Restaurants"}</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 12 }}>
-                {plan.topRestaurants.map((r,i) => (
-                  <div key={i} className="clift" style={{ border: "1px solid #EEECE8", borderRadius: 14, padding: 18, background: "#fff" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700 }}>🍽️ {r.name}</div>
-                      {r.rating && <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", background: "#fffbeb", padding: "3px 8px", borderRadius: 6, flexShrink: 0 }}>★ {r.rating}</div>}
-                    </div>
-                    <div style={{ fontSize: 12, color: "#888", marginBottom: 4 }}>{r.cuisine} <span style={{ color: "#2A7F62", fontWeight: 600 }}>{r.priceLevel}</span></div>
-                    {r.area && <div style={{ fontSize: 11, color: "#bbb", marginBottom: 6 }}>📍 {r.area}</div>}
-                    {r.specialty && <div style={{ fontSize: 12, color: "#666", fontStyle: "italic" }}>✨ {r.specialty}</div>}
+          {plan.topRestaurants?.length>0 && <Reveal delay={.1}><div style={{ padding: "32px 0", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.2)", textTransform: "uppercase", letterSpacing: 2, marginBottom: 18 }}>{L.plan.restaurants}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 12 }}>
+              {plan.topRestaurants.map((r,i)=>(
+                <div key={i} className="glow" style={{ border: "1px solid rgba(255,255,255,.06)", borderRadius: 14, padding: 18, background: "rgba(255,255,255,.02)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>🍽️ {r.name}</div>
+                    {r.rating && <div style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,.08)", padding: "2px 7px", borderRadius: 5, flexShrink: 0 }}>★ {r.rating}</div>}
                   </div>
-                ))}
-              </div>
-            </div></Reveal>
-          )}
-
-          {/* Budget */}
-          <Reveal delay={.1}><div style={{ padding: "36px 0", borderBottom: "1px solid #EEECE8" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 18 }}>{L.plan.budget} — {L.tiers[tier]}</div>
-            <div style={{ borderRadius: 16, border: "1px solid #EEECE8", overflow: "hidden" }}>
-              {[{l:L.plan.hotelC,v:bd.hotel||0,d:`${days} ${L.plan.nights}`},{l:L.plan.act,v:bd.activities||0,d:`${sched.length} ${L.plan.daysL}`},{l:L.plan.food,v:bd.food||0,d:`${days} ${L.plan.daysL}`},{l:L.plan.trans,v:bd.transport||0,d:`${days} ${L.plan.daysL}`}].map((r,i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 22px", borderBottom: "1px solid #f5f5f3", background: "#fff" }}>
-                  <div><div style={{ fontSize: 14, fontWeight: 500 }}>{r.l}</div><div style={{ fontSize: 11, color: "#bbb" }}>{r.d}</div></div>
-                  <div style={{ fontSize: 17, fontWeight: 700 }}>{userCurrency.symbol}{r.v.toLocaleString()}</div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,.35)" }}>{r.cuisine} <span style={{ color: "#c9a96e" }}>{r.priceLevel}</span></div>
+                  {r.area && <div style={{ fontSize: 11, color: "rgba(255,255,255,.15)", marginTop: 4 }}>📍 {r.area}</div>}
+                  {r.specialty && <div style={{ fontSize: 12, color: "rgba(255,255,255,.3)", marginTop: 6, fontStyle: "italic" }}>✨ {r.specialty}</div>}
                 </div>
               ))}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 22px", background: "linear-gradient(135deg,#111,#1a2a22)", color: "#fff" }}>
+            </div>
+          </div></Reveal>}
+
+          {/* Budget */}
+          <Reveal delay={.1}><div style={{ padding: "32px 0", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.2)", textTransform: "uppercase", letterSpacing: 2, marginBottom: 18 }}>{L.plan.budget} — {L.tiers[tier]}</div>
+            <div style={{ borderRadius: 14, border: "1px solid rgba(255,255,255,.06)", overflow: "hidden" }}>
+              {[{l:L.plan.hotelC,v:bd.hotel||0,d:`${days} ${L.plan.nights}`},{l:L.plan.act,v:bd.activities||0,d:`${sched.length} ${L.plan.daysL}`},{l:L.plan.food,v:bd.food||0,d:`${days} ${L.plan.daysL}`},{l:L.plan.trans,v:bd.transport||0,d:`${days} ${L.plan.daysL}`}].map((r,i)=>(
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid rgba(255,255,255,.04)", background: "rgba(255,255,255,.02)" }}>
+                  <div><div style={{ fontSize: 14, fontWeight: 500 }}>{r.l}</div><div style={{ fontSize: 11, color: "rgba(255,255,255,.15)" }}>{r.d}</div></div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: "#c9a96e" }}>{P(r.v)}</div>
+                </div>
+              ))}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px", background: "linear-gradient(135deg,rgba(201,169,110,.12),rgba(201,169,110,.04))" }}>
                 <div style={{ fontSize: 15, fontWeight: 600 }}>{L.plan.grand}</div>
-                <div style={{ fontSize: 30, fontWeight: 800 }}>{userCurrency.symbol}{tot.toLocaleString()}</div>
+                <div style={{ fontSize: 30, fontWeight: 700, color: "#c9a96e", fontFamily: "'Cormorant Garamond',serif" }}>{P(tot)}</div>
               </div>
             </div>
-            <div style={{ fontSize: 12, color: "#bbb", marginTop: 12 }}>{L.plan.note}</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,.15)", marginTop: 10 }}>{L.plan.note}</div>
           </div></Reveal>
 
           {/* Tips */}
-          <Reveal delay={.1}><div style={{ padding: "36px 0", borderBottom: "1px solid #EEECE8" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 18 }}>{L.plan.tips}</div>
-            {plan.tips.map((tip,i) => (
-              <div key={i} style={{ display: "flex", gap: 14, padding: "13px 0", borderBottom: i<plan.tips.length-1?"1px solid #f5f5f3":"none" }}>
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,rgba(42,127,98,.08),rgba(42,127,98,.03))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#2A7F62", flexShrink: 0 }}>{i+1}</div>
-                <div style={{ fontSize: 14, color: "#444", lineHeight: 1.75 }}>{tip}</div>
+          <Reveal delay={.1}><div style={{ padding: "32px 0", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.2)", textTransform: "uppercase", letterSpacing: 2, marginBottom: 18 }}>{L.plan.tips}</div>
+            {(plan.tips||[]).map((tip,i)=>(
+              <div key={i} style={{ display: "flex", gap: 14, padding: "12px 0", borderBottom: i<(plan.tips||[]).length-1?"1px solid rgba(255,255,255,.04)":"none" }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(201,169,110,.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#c9a96e", flexShrink: 0 }}>{i+1}</div>
+                <div style={{ fontSize: 14, color: "rgba(255,255,255,.5)", lineHeight: 1.75 }}>{tip}</div>
               </div>
             ))}
           </div></Reveal>
 
           <div style={{ textAlign: "center", padding: "36px 0" }}>
-            <div style={{ fontSize: 12, color: "#ccc", marginBottom: 18 }}>{L.plan.src}</div>
-            <button onClick={reset} style={{ padding: "14px 44px", borderRadius: 12, border: "1.5px solid #ddd", background: "#fff", fontSize: 15, fontWeight: 600, color: "#666", cursor: "pointer", fontFamily: "inherit" }}>{L.plan.newTrip}</button>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,.15)", marginBottom: 18 }}>{L.plan.src}</div>
+            <button onClick={reset} style={{ padding: "14px 44px", borderRadius: 12, border: "1px solid rgba(255,255,255,.1)", background: "transparent", fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,.5)", cursor: "pointer", fontFamily: "inherit" }}>{L.plan.newTrip}</button>
           </div>
         </div>
       )}
 
       {/* FOOTER */}
-      <footer style={{ borderTop: "1px solid #EEECE8", padding: "28px 0", background: "#fff" }}>
+      <footer style={{ borderTop: "1px solid rgba(255,255,255,.06)", padding: "28px 0" }}>
         <div style={{ ...W, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 24, height: 24, borderRadius: 6, background: "linear-gradient(135deg,#2A7F62,#1a5c45)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 10, fontWeight: 800 }}>T</div>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#bbb" }}>TripWall</span>
-          </div>
-          <div style={{ fontSize: 11, color: "#ccc" }}>© 2026 — {L.footer}</div>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,.15)", letterSpacing: 1 }}>TRIPWALL</span>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,.1)" }}>© 2026 — {L.footer}</div>
         </div>
       </footer>
     </div>
