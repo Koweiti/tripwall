@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
-    const { destination, days, lang } = await request.json();
+    const { destination, days, lang, currency } = await request.json();
 
     if (!destination || !days) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -14,10 +14,13 @@ export async function POST(request) {
     }
 
     const outputLang = lang === "ar" ? "Arabic" : "English";
+    const currencyCode = currency || "USD";
 
     const prompt = `You are a professional travel planner. Create a complete travel plan for "${destination}" for ${days} days.
 
 Search the web for the LATEST and BEST rated information about this destination.
+
+IMPORTANT: All prices must be in ${currencyCode}. Convert from USD if needed using current exchange rates.
 
 Return ONLY valid JSON (no markdown, no backticks) with this structure:
 {
@@ -30,6 +33,7 @@ Return ONLY valid JSON (no markdown, no backticks) with this structure:
   "language": "in ${outputLang}",
   "visa": "info in ${outputLang}",
   "timezone": "GMT offset",
+  "priceCurrency": "${currencyCode}",
   "hotels": {
     "luxury": [{"name":"","area":"","desc":"","pricePerNight":0}],
     "mid": [{"name":"","area":"","desc":"","pricePerNight":0}],
@@ -48,10 +52,11 @@ Return ONLY valid JSON (no markdown, no backticks) with this structure:
 
 RULES:
 - Search for REAL current top-rated hotels, restaurants, attractions
-- 3 hotels per tier with REAL current USD prices
+- 3 hotels per tier with REAL current prices in ${currencyCode}
 - Exactly ${days} days in schedule
 - ALL text in ${outputLang}
-- Budget totals for all ${days} days in USD
+- ALL prices in ${currencyCode} (convert from USD using current rates)
+- Budget totals for all ${days} days in ${currencyCode}
 - Real restaurant names
 - 5 practical tips
 - ONLY JSON`;
