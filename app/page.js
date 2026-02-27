@@ -364,8 +364,11 @@ export default function TripWall() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 14 }}>
               {hotels.map((h,i) => (
                 <div key={i} className="clift" style={{ border: "1px solid #EEECE8", borderRadius: 16, padding: 22, background: "#fff" }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 3 }}>{h.name}</div>
-                  <div style={{ fontSize: 12, color: "#999", marginBottom: 14 }}>{h.area} — {h.desc}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 3 }}>{h.name}</div>
+                    {h.rating && <div style={{ fontSize: 11, fontWeight: 700, color: "#2A7F62", background: "#E8F5EF", padding: "3px 8px", borderRadius: 6, flexShrink: 0 }}>{h.rating}</div>}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#999", marginBottom: 14 }}>{h.area}{h.desc?` — ${h.desc}`:""}</div>
                   <span style={{ fontSize: 24, fontWeight: 800 }}>{userCurrency.symbol}{h.pricePerNight}</span><span style={{ fontSize: 12, color: "#bbb" }}> / {L.plan.night}</span>
                   <div style={{ fontSize: 12, color: "#aaa", marginTop: 3 }}>{userCurrency.symbol}{(h.pricePerNight*days).toLocaleString()} {L.plan.total}</div>
                 </div>
@@ -392,11 +395,50 @@ export default function TripWall() {
                       </div>
                     ))}
                   </div>
-                  {d.restaurant && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 16px", background: "#fff", border: "1px solid #EEECE8", borderRadius: 10, fontSize: 13, color: "#666" }}>🍽️ <span style={{ fontWeight: 600 }}>{d.restaurant.name}</span> <span style={{ color: "#ddd" }}>•</span> <span style={{ color: "#999" }}>{d.restaurant.cuisine}</span> <span style={{ color: "#2A7F62", fontWeight: 600 }}>{d.restaurant.priceLevel}</span></div>}
+                  {d.restaurant && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 16px", background: "#fff", border: "1px solid #EEECE8", borderRadius: 10, fontSize: 13, color: "#666" }}>🍽️ <span style={{ fontWeight: 600 }}>{d.restaurant.name}</span> <span style={{ color: "#ddd" }}>•</span> <span style={{ color: "#999" }}>{d.restaurant.cuisine}</span> <span style={{ color: "#2A7F62", fontWeight: 600 }}>{d.restaurant.priceLevel}</span> {d.restaurant.rating && <><span style={{ color: "#ddd" }}>•</span> <span style={{ color: "#f59e0b", fontWeight: 600 }}>★ {d.restaurant.rating}</span></>}</div>}
                 </div>
               </Reveal>
             ))}
           </div>
+
+          {/* Top Attractions */}
+          {plan.topAttractions && plan.topAttractions.length > 0 && (
+            <Reveal delay={.1}><div style={{ padding: "36px 0", borderBottom: "1px solid #EEECE8" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 18 }}>{lang==="ar"?"أفضل المعالم السياحية":"Top Attractions"}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 12 }}>
+                {plan.topAttractions.map((a,i) => (
+                  <div key={i} className="clift" style={{ border: "1px solid #EEECE8", borderRadius: 14, padding: 18, background: "#fff" }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{a.name}</div>
+                    <div style={{ fontSize: 12, color: "#888", lineHeight: 1.6, marginBottom: 10 }}>{a.desc}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 12, color: "#2A7F62", fontWeight: 600 }}>{a.cost > 0 ? `${userCurrency.symbol}${a.cost}` : (lang==="ar"?"مجاني":"Free")}</span>
+                      {a.duration && <span style={{ fontSize: 11, color: "#bbb" }}>⏱ {a.duration}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div></Reveal>
+          )}
+
+          {/* Top Restaurants */}
+          {plan.topRestaurants && plan.topRestaurants.length > 0 && (
+            <Reveal delay={.1}><div style={{ padding: "36px 0", borderBottom: "1px solid #EEECE8" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 18 }}>{lang==="ar"?"أفضل المطاعم":"Top Restaurants"}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 12 }}>
+                {plan.topRestaurants.map((r,i) => (
+                  <div key={i} className="clift" style={{ border: "1px solid #EEECE8", borderRadius: 14, padding: 18, background: "#fff" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700 }}>🍽️ {r.name}</div>
+                      {r.rating && <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", background: "#fffbeb", padding: "3px 8px", borderRadius: 6, flexShrink: 0 }}>★ {r.rating}</div>}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#888", marginBottom: 4 }}>{r.cuisine} <span style={{ color: "#2A7F62", fontWeight: 600 }}>{r.priceLevel}</span></div>
+                    {r.area && <div style={{ fontSize: 11, color: "#bbb", marginBottom: 6 }}>📍 {r.area}</div>}
+                    {r.specialty && <div style={{ fontSize: 12, color: "#666", fontStyle: "italic" }}>✨ {r.specialty}</div>}
+                  </div>
+                ))}
+              </div>
+            </div></Reveal>
+          )}
 
           {/* Budget */}
           <Reveal delay={.1}><div style={{ padding: "36px 0", borderBottom: "1px solid #EEECE8" }}>
