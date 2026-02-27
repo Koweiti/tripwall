@@ -69,10 +69,52 @@ export default function TripWall() {
   const [plan, setPlan] = useState(null);
   const [tier, setTier] = useState("mid");
   const [heroIn, setHeroIn] = useState(false);
+  const [userCurrency, setUserCurrency] = useState({ code: "USD", symbol: "$", name: "دولار أمريكي" });
   const L = T[lang];
   const rtl = lang === "ar";
 
   useEffect(() => { setTimeout(() => setHeroIn(true), 100); }, []);
+
+  // Auto-detect user's country and currency
+  useEffect(() => {
+    const CURRENCIES = {
+      KW: { code: "KWD", symbol: "د.ك", nameAr: "دينار كويتي", nameEn: "Kuwaiti Dinar" },
+      AE: { code: "AED", symbol: "د.إ", nameAr: "درهم إماراتي", nameEn: "UAE Dirham" },
+      SA: { code: "SAR", symbol: "ر.س", nameAr: "ريال سعودي", nameEn: "Saudi Riyal" },
+      QA: { code: "QAR", symbol: "ر.ق", nameAr: "ريال قطري", nameEn: "Qatari Riyal" },
+      BH: { code: "BHD", symbol: "د.ب", nameAr: "دينار بحريني", nameEn: "Bahraini Dinar" },
+      OM: { code: "OMR", symbol: "ر.ع", nameAr: "ريال عماني", nameEn: "Omani Rial" },
+      EG: { code: "EGP", symbol: "ج.م", nameAr: "جنيه مصري", nameEn: "Egyptian Pound" },
+      JO: { code: "JOD", symbol: "د.أ", nameAr: "دينار أردني", nameEn: "Jordanian Dinar" },
+      LB: { code: "LBP", symbol: "ل.ل", nameAr: "ليرة لبنانية", nameEn: "Lebanese Pound" },
+      IQ: { code: "IQD", symbol: "د.ع", nameAr: "دينار عراقي", nameEn: "Iraqi Dinar" },
+      MA: { code: "MAD", symbol: "د.م", nameAr: "درهم مغربي", nameEn: "Moroccan Dirham" },
+      TN: { code: "TND", symbol: "د.ت", nameAr: "دينار تونسي", nameEn: "Tunisian Dinar" },
+      TR: { code: "TRY", symbol: "₺", nameAr: "ليرة تركية", nameEn: "Turkish Lira" },
+      GB: { code: "GBP", symbol: "£", nameAr: "جنيه إسترليني", nameEn: "British Pound" },
+      EU: { code: "EUR", symbol: "€", nameAr: "يورو", nameEn: "Euro" },
+      FR: { code: "EUR", symbol: "€", nameAr: "يورو", nameEn: "Euro" },
+      DE: { code: "EUR", symbol: "€", nameAr: "يورو", nameEn: "Euro" },
+      IT: { code: "EUR", symbol: "€", nameAr: "يورو", nameEn: "Euro" },
+      ES: { code: "EUR", symbol: "€", nameAr: "يورو", nameEn: "Euro" },
+      US: { code: "USD", symbol: "$", nameAr: "دولار أمريكي", nameEn: "US Dollar" },
+      IN: { code: "INR", symbol: "₹", nameAr: "روبية هندية", nameEn: "Indian Rupee" },
+      PK: { code: "PKR", symbol: "₨", nameAr: "روبية باكستانية", nameEn: "Pakistani Rupee" },
+      MY: { code: "MYR", symbol: "RM", nameAr: "رينغيت ماليزي", nameEn: "Malaysian Ringgit" },
+      ID: { code: "IDR", symbol: "Rp", nameAr: "روبية إندونيسية", nameEn: "Indonesian Rupiah" },
+      JP: { code: "JPY", symbol: "¥", nameAr: "ين ياباني", nameEn: "Japanese Yen" },
+    };
+    fetch("https://ipapi.co/json/")
+      .then(r => r.json())
+      .then(data => {
+        const cc = data?.country_code;
+        if (cc && CURRENCIES[cc]) {
+          const c = CURRENCIES[cc];
+          setUserCurrency({ code: c.code, symbol: c.symbol, name: lang === "ar" ? c.nameAr : c.nameEn });
+        }
+      })
+      .catch(() => {});
+  }, [lang]);
 
   const goPlan = () => { setPage("planner"); window.scrollTo({ top: 0 }); };
   const goHome = () => { setPlan(null); setDest(""); setPage("landing"); setHeroIn(false); setTimeout(() => setHeroIn(true), 100); };
@@ -83,7 +125,7 @@ export default function TripWall() {
     try {
       const res = await fetch("/api/generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ destination: dest.trim(), days, lang }),
+        body: JSON.stringify({ destination: dest.trim(), days, lang, currency: userCurrency.code }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error");
@@ -274,6 +316,11 @@ export default function TripWall() {
             </div>
           </div>
           <button onClick={generate} disabled={!dest.trim()} style={{ padding: "17px 56px", borderRadius: 14, border: "none", fontSize: 17, fontWeight: 700, background: dest.trim()?"#1a1a1a":"#eee", color: dest.trim()?"#fff":"#bbb", cursor: dest.trim()?"pointer":"not-allowed", fontFamily: "inherit" }}>{L.planner.go}</button>
+
+          {/* Currency indicator */}
+          <div style={{ marginTop: 16, display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "#E8F5EF", borderRadius: 8, fontSize: 12, color: "#2A7F62", fontWeight: 500 }}>
+            💱 {lang === "ar" ? "الأسعار ستظهر بـ" : "Prices shown in"} <span style={{ fontWeight: 700 }}>{userCurrency.name} ({userCurrency.symbol})</span>
+          </div>
         </div>
       )}
 
@@ -319,8 +366,8 @@ export default function TripWall() {
                 <div key={i} className="clift" style={{ border: "1px solid #EEECE8", borderRadius: 16, padding: 22, background: "#fff" }}>
                   <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 3 }}>{h.name}</div>
                   <div style={{ fontSize: 12, color: "#999", marginBottom: 14 }}>{h.area} — {h.desc}</div>
-                  <span style={{ fontSize: 24, fontWeight: 800 }}>${h.pricePerNight}</span><span style={{ fontSize: 12, color: "#bbb" }}> / {L.plan.night}</span>
-                  <div style={{ fontSize: 12, color: "#aaa", marginTop: 3 }}>${(h.pricePerNight*days).toLocaleString()} {L.plan.total}</div>
+                  <span style={{ fontSize: 24, fontWeight: 800 }}>{userCurrency.symbol}{h.pricePerNight}</span><span style={{ fontSize: 12, color: "#bbb" }}> / {L.plan.night}</span>
+                  <div style={{ fontSize: 12, color: "#aaa", marginTop: 3 }}>{userCurrency.symbol}{(h.pricePerNight*days).toLocaleString()} {L.plan.total}</div>
                 </div>
               ))}
             </div>
@@ -341,7 +388,7 @@ export default function TripWall() {
                       <div key={pi} style={{ display: "flex", gap: 14, padding: "15px 18px", background: "#fff", alignItems: "flex-start" }}>
                         <span style={{ fontSize: 18, marginTop: 1 }}>{p.i}</span>
                         <div style={{ flex: 1 }}><div style={{ fontSize: 10, color: "#bbb", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>{p.l}</div><div style={{ fontSize: 14, color: "#222", lineHeight: 1.65 }}>{p.d?.activity||p.d}</div></div>
-                        <div style={{ fontSize: 12, color: p.d?.cost>0?"#2A7F62":"#ddd", fontWeight: 600, marginTop: 16 }}>{p.d?.cost>0?`~$${p.d.cost}`:L.plan.free}</div>
+                        <div style={{ fontSize: 12, color: p.d?.cost>0?"#2A7F62":"#ddd", fontWeight: 600, marginTop: 16 }}>{p.d?.cost>0?`~${userCurrency.symbol}${p.d.cost}`:L.plan.free}</div>
                       </div>
                     ))}
                   </div>
@@ -358,12 +405,12 @@ export default function TripWall() {
               {[{l:L.plan.hotelC,v:bd.hotel||0,d:`${days} ${L.plan.nights}`},{l:L.plan.act,v:bd.activities||0,d:`${sched.length} ${L.plan.daysL}`},{l:L.plan.food,v:bd.food||0,d:`${days} ${L.plan.daysL}`},{l:L.plan.trans,v:bd.transport||0,d:`${days} ${L.plan.daysL}`}].map((r,i) => (
                 <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 22px", borderBottom: "1px solid #f5f5f3", background: "#fff" }}>
                   <div><div style={{ fontSize: 14, fontWeight: 500 }}>{r.l}</div><div style={{ fontSize: 11, color: "#bbb" }}>{r.d}</div></div>
-                  <div style={{ fontSize: 17, fontWeight: 700 }}>${r.v.toLocaleString()}</div>
+                  <div style={{ fontSize: 17, fontWeight: 700 }}>{userCurrency.symbol}{r.v.toLocaleString()}</div>
                 </div>
               ))}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 22px", background: "linear-gradient(135deg,#111,#1a2a22)", color: "#fff" }}>
                 <div style={{ fontSize: 15, fontWeight: 600 }}>{L.plan.grand}</div>
-                <div style={{ fontSize: 30, fontWeight: 800 }}>${tot.toLocaleString()}</div>
+                <div style={{ fontSize: 30, fontWeight: 800 }}>{userCurrency.symbol}{tot.toLocaleString()}</div>
               </div>
             </div>
             <div style={{ fontSize: 12, color: "#bbb", marginTop: 12 }}>{L.plan.note}</div>
