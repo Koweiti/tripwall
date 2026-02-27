@@ -16,9 +16,9 @@ export async function POST(request) {
     const outputLang = lang === "ar" ? "Arabic" : "English";
     const currencyCode = currency || "USD";
 
-    const prompt = `You are a professional travel planner. Create a complete travel plan for "${destination}" for ${days} days.
+    const prompt = `You are a world-class professional travel planner. Create a COMPREHENSIVE travel plan for "${destination}" for ${days} days.
 
-Search the web for the LATEST and BEST rated information about this destination.
+Search the web extensively for the LATEST and BEST rated information about this destination.
 
 IMPORTANT: All prices must be in ${currencyCode}. Convert from USD if needed using current exchange rates.
 
@@ -28,21 +28,27 @@ Return ONLY valid JSON (no markdown, no backticks) with this structure:
   "country": "country in ${outputLang}",
   "currency": "code and name in ${outputLang}",
   "flag": "emoji",
-  "weather": "brief in ${outputLang}",
-  "bestTime": "months in ${outputLang}",
+  "weather": "detailed weather description in ${outputLang}",
+  "bestTime": "best months to visit in ${outputLang}",
   "language": "in ${outputLang}",
-  "visa": "info in ${outputLang}",
+  "visa": "detailed visa info in ${outputLang}",
   "timezone": "GMT offset",
   "priceCurrency": "${currencyCode}",
   "hotels": {
-    "luxury": [{"name":"","area":"","desc":"","pricePerNight":0}],
-    "mid": [{"name":"","area":"","desc":"","pricePerNight":0}],
-    "budget": [{"name":"","area":"","desc":"","pricePerNight":0}]
+    "luxury": [{"name":"","area":"","desc":"short description","rating":"e.g. 9.2/10","pricePerNight":0}],
+    "mid": [{"name":"","area":"","desc":"","rating":"","pricePerNight":0}],
+    "budget": [{"name":"","area":"","desc":"","rating":"","pricePerNight":0}]
   },
-  "schedule": [
-    {"day":1,"title":"in ${outputLang}","morning":{"activity":"in ${outputLang}","cost":0},"afternoon":{"activity":"","cost":0},"evening":{"activity":"","cost":0},"restaurant":{"name":"real name","cuisine":"in ${outputLang}","priceLevel":"$$$"}}
+  "topAttractions": [
+    {"name":"in ${outputLang}","desc":"brief in ${outputLang}","cost":0,"duration":"e.g. 2-3 hours"}
   ],
-  "tips": ["tip1 in ${outputLang}", "tip2", "tip3", "tip4", "tip5"],
+  "schedule": [
+    {"day":1,"title":"in ${outputLang}","morning":{"activity":"detailed in ${outputLang}","location":"specific place","cost":0},"afternoon":{"activity":"","location":"","cost":0},"evening":{"activity":"","location":"","cost":0},"restaurant":{"name":"real name","cuisine":"in ${outputLang}","priceLevel":"$$$","rating":"e.g. 4.5/5"}}
+  ],
+  "topRestaurants": [
+    {"name":"real name","cuisine":"in ${outputLang}","priceLevel":"$$","area":"neighborhood","rating":"e.g. 4.7/5","specialty":"signature dish in ${outputLang}"}
+  ],
+  "tips": ["tip in ${outputLang}"],
   "budgetEstimate": {
     "luxury": {"hotel":0,"food":0,"activities":0,"transport":0},
     "mid": {"hotel":0,"food":0,"activities":0,"transport":0},
@@ -52,14 +58,17 @@ Return ONLY valid JSON (no markdown, no backticks) with this structure:
 
 RULES:
 - Search for REAL current top-rated hotels, restaurants, attractions
-- 3 hotels per tier with REAL current prices in ${currencyCode}
-- Exactly ${days} days in schedule
+- 5 hotels per tier (luxury, mid, budget) with REAL ratings and prices in ${currencyCode}
+- 8 top attractions with costs and durations
+- Exactly ${days} days in schedule with DETAILED activities and specific locations
+- Each day must have a DIFFERENT real restaurant with rating
+- 8 top standalone restaurants (separate from daily schedule)
 - ALL text in ${outputLang}
-- ALL prices in ${currencyCode} (convert from USD using current rates)
+- ALL prices in ${currencyCode} (convert using current rates)
 - Budget totals for all ${days} days in ${currencyCode}
-- Real restaurant names
-- 5 practical tips
-- ONLY JSON`;
+- 8 practical travel tips
+- Include ratings for hotels and restaurants
+- ONLY JSON, nothing else`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -70,7 +79,7 @@ RULES:
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 8000,
+        max_tokens: 16000,
         tools: [{ type: "web_search_20250305", name: "web_search" }],
         messages: [{ role: "user", content: prompt }],
       }),
