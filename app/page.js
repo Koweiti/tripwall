@@ -1,341 +1,400 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import translations from "../lib/translations";
 import popularDests from "../lib/destinations";
 
-export default function Home() {
+/* ── Animated Globe ── */
+function Globe() {
+  return (
+    <svg viewBox="0 0 200 200" style={{ width: "100%", height: "100%" }}>
+      <defs>
+        <linearGradient id="grd" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#2A7F62" stopOpacity="0.15" />
+          <stop offset="100%" stopColor="#2A7F62" stopOpacity="0.03" />
+        </linearGradient>
+      </defs>
+      <circle cx="100" cy="100" r="80" fill="url(#grd)" stroke="#2A7F62" strokeOpacity="0.12" strokeWidth="1" />
+      <ellipse cx="100" cy="100" rx="80" ry="30" fill="none" stroke="#2A7F62" strokeOpacity="0.08" strokeWidth="0.8">
+        <animateTransform attributeName="transform" type="rotate" values="0 100 100;360 100 100" dur="20s" repeatCount="indefinite" />
+      </ellipse>
+      <ellipse cx="100" cy="100" rx="55" ry="80" fill="none" stroke="#2A7F62" strokeOpacity="0.08" strokeWidth="0.8">
+        <animateTransform attributeName="transform" type="rotate" values="0 100 100;-360 100 100" dur="25s" repeatCount="indefinite" />
+      </ellipse>
+      <ellipse cx="100" cy="100" rx="30" ry="80" fill="none" stroke="#2A7F62" strokeOpacity="0.06" strokeWidth="0.8" />
+      <line x1="20" y1="100" x2="180" y2="100" stroke="#2A7F62" strokeOpacity="0.06" strokeWidth="0.5" />
+      {[60, 80, 120, 140].map(y => (
+        <line key={y} x1={100 - Math.sqrt(Math.max(0, 6400 - (y-100)**2))} y1={y} x2={100 + Math.sqrt(Math.max(0, 6400 - (y-100)**2))} y2={y} stroke="#2A7F62" strokeOpacity="0.04" strokeWidth="0.5" />
+      ))}
+      <circle r="3" fill="#2A7F62" fillOpacity="0.5">
+        <animateMotion dur="8s" repeatCount="indefinite" path="M20,100 Q100,30 180,100 Q100,170 20,100" />
+      </circle>
+      <circle r="2" fill="#2A7F62" fillOpacity="0.3">
+        <animateMotion dur="12s" repeatCount="indefinite" path="M100,20 Q170,100 100,180 Q30,100 100,20" />
+      </circle>
+    </svg>
+  );
+}
+
+/* ── Scroll Reveal ── */
+function Reveal({ children, delay = 0, style = {} }) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.12 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div ref={ref} style={{
+      ...style, opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)",
+      transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s`,
+    }}>{children}</div>
+  );
+}
+
+const DESTS = popularDests;
+
+const T = translations;
+
+
+
+export default function TripWall() {
   const [lang, setLang] = useState("ar");
   const [page, setPage] = useState("landing");
   const [dest, setDest] = useState("");
   const [days, setDays] = useState(4);
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState("");
   const [plan, setPlan] = useState(null);
-  const [error, setError] = useState("");
   const [tier, setTier] = useState("mid");
-  const L = translations[lang];
-  const isRTL = lang === "ar";
+  const [heroIn, setHeroIn] = useState(false);
+  const L = T[lang];
+  const rtl = lang === "ar";
 
-  const scrollToPlanner = () => {
-    setPage("planner");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  useEffect(() => { setTimeout(() => setHeroIn(true), 100); }, []);
+
+  const goPlan = () => { setPage("planner"); window.scrollTo({ top: 0 }); };
+  const goHome = () => { setPlan(null); setDest(""); setPage("landing"); setHeroIn(false); setTimeout(() => setHeroIn(true), 100); };
 
   const generate = async () => {
     if (!dest.trim()) return;
-    setLoading(true);
-    setError("");
-    setPlan(null);
-    setProgress(L.planner.searching);
-
+    setLoading(true); setPlan(null);
     try {
       const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ destination: dest.trim(), days, lang }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error");
       setPlan(data.plan);
-    } catch (err) {
-      console.error(err);
-      setError(L.planner.error);
-    } finally {
-      setLoading(false);
-      setProgress("");
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
-  const reset = () => { setPlan(null); setDest(""); setDays(4); setTier("mid"); setError(""); setPage("planner"); };
-  const goHome = () => { setPlan(null); setDest(""); setDays(4); setError(""); setPage("landing"); };
+  const reset = () => { setPlan(null); setDest(""); setDays(4); setTier("mid"); };
 
   const hotels = plan?.hotels?.[tier] || [];
   const sched = plan?.schedule || [];
   const bd = plan?.budgetEstimate?.[tier] || {};
-  const total = (bd.hotel || 0) + (bd.food || 0) + (bd.activities || 0) + (bd.transport || 0);
-  const daysText = (n) => lang === "ar" ? (n === 1 ? "يوم واحد" : n === 2 ? "يومان" : `${n} أيام`) : `${n} ${n === 1 ? "day" : "days"}`;
-
-  const sty = {
-    wrap: { maxWidth: 800, margin: "0 auto", padding: "0 28px" },
-  };
+  const tot = (bd.hotel||0)+(bd.food||0)+(bd.activities||0)+(bd.transport||0);
+  const dtxt = n => lang==="ar"?(n===1?"يوم واحد":n===2?"يومان":`${n} أيام`):`${n} ${n===1?"day":"days"}`;
+  const W = { maxWidth: 860, margin: "0 auto", padding: "0 32px" };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FAFAF8", color: "#1a1a1a", direction: isRTL ? "rtl" : "ltr" }}>
+    <div style={{ minHeight: "100vh", background: "#FAFAF8", color: "#1a1a1a", direction: rtl?"rtl":"ltr", fontFamily: "'Tajawal','DM Sans',-apple-system,sans-serif", overflowX: "hidden" }}>
       <style>{`
-        @keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=DM+Sans:wght@300;400;500;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
-        .fu{animation:fadeUp .5s ease both}
-        .fu1{animation-delay:.06s}.fu2{animation-delay:.12s}.fu3{animation-delay:.18s}.fu4{animation-delay:.24s}.fu5{animation-delay:.3s}
-        .hover-lift{transition:transform .25s,box-shadow .25s}
-        .hover-lift:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,.06)}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+        input:focus,button:focus{outline:none}
+        ::selection{background:#2A7F62;color:#fff}
+        .glass{background:rgba(250,250,248,.7);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+        .clift{transition:transform .35s cubic-bezier(.2,0,0,1),box-shadow .35s ease}
+        .clift:hover{transform:translateY(-6px);box-shadow:0 16px 48px rgba(42,127,98,.08)}
+        .pill{transition:all .25s cubic-bezier(.2,0,0,1)}
+        .pill:hover{transform:scale(1.04);box-shadow:0 4px 16px rgba(0,0,0,.06)}
+        .sline{width:48px;height:3px;background:#2A7F62;border-radius:2px}
+        ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#ddd;border-radius:3px}
       `}</style>
 
       {/* NAV */}
-      <nav style={{ borderBottom: "1px solid #EEECE8", background: "rgba(250,250,248,.85)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 100 }}>
-        <div style={{ ...sty.wrap, display: "flex", justifyContent: "space-between", alignItems: "center", height: 60 }}>
-          <div onClick={goHome} style={{ fontSize: 20, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, letterSpacing: "-0.5px" }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#2A7F62" }} />
-            TripWall
+      <nav className="glass" style={{ borderBottom: "1px solid rgba(0,0,0,.06)", position: "sticky", top: 0, zIndex: 100 }}>
+        <div style={{ ...W, display: "flex", justifyContent: "space-between", alignItems: "center", height: 64 }}>
+          <div onClick={goHome} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#2A7F62,#1a5c45)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14, fontWeight: 800 }}>T</div>
+            <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.5px" }}>TripWall</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 24, fontSize: 14 }}>
-            <span onClick={scrollToPlanner} style={{ color: "#888", cursor: "pointer", fontWeight: 500 }}>{L.nav.plan}</span>
-            {page === "landing" && <span onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })} style={{ color: "#888", cursor: "pointer", fontWeight: 500 }}>{L.nav.how}</span>}
-            <button onClick={() => setLang(lang === "ar" ? "en" : "ar")} style={{
-              padding: "6px 14px", borderRadius: 6, border: "1.5px solid #EEECE8", background: "transparent",
-              fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#666", fontFamily: "inherit",
-            }}>{L.nav.lang}</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 20, fontSize: 14 }}>
+            <span onClick={goPlan} style={{ color: "#666", cursor: "pointer", fontWeight: 500 }}>{L.nav.plan}</span>
+            {page==="landing" && <span onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })} style={{ color: "#666", cursor: "pointer", fontWeight: 500 }}>{L.nav.how}</span>}
+            <button onClick={() => setLang(lang==="ar"?"en":"ar")} style={{ padding: "7px 16px", borderRadius: 8, border: "1.5px solid #E8E6E2", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#555", fontFamily: "inherit" }}>{L.nav.lang}</button>
           </div>
         </div>
       </nav>
 
-      {/* LANDING */}
-      {page === "landing" && (
-        <>
-          <section style={{ padding: "80px 0 60px" }}>
-            <div style={sty.wrap}>
-              <div className="fu" style={{ display: "inline-block", padding: "6px 14px", borderRadius: 20, background: "#E8F5EF", color: "#2A7F62", fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 20, textTransform: "uppercase" }}>{L.hero.badge}</div>
-              <h1 className="fu fu1" style={{ fontFamily: "'DM Serif Display','Tajawal',serif", fontSize: "clamp(38px,6vw,62px)", fontWeight: 400, lineHeight: 1.12, maxWidth: 600, marginBottom: 20, letterSpacing: "-1px" }}>
-                {L.hero.h1a}<br /><span style={{ color: "#2A7F62" }}>{L.hero.h1b}</span>
-              </h1>
-              <p className="fu fu2" style={{ fontSize: 17, color: "#777", maxWidth: 480, lineHeight: 1.8, marginBottom: 36 }}>{L.hero.desc}</p>
-              <button className="fu fu3" onClick={scrollToPlanner} style={{ padding: "16px 44px", borderRadius: 10, border: "none", fontSize: 16, fontWeight: 700, background: "#1a1a1a", color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>{L.hero.cta}</button>
-            </div>
-          </section>
+      {/* ═══ LANDING ═══ */}
+      {page==="landing" && <>
+        {/* HERO */}
+        <section style={{ position: "relative", overflow: "hidden", minHeight: "88vh", display: "flex", alignItems: "center" }}>
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 70% 20%,rgba(42,127,98,.04) 0%,transparent 60%),radial-gradient(ellipse at 20% 80%,rgba(42,127,98,.03) 0%,transparent 50%)" }} />
+          <div style={{ position: "absolute", top: 40, [rtl?"left":"right"]: 40, width: 120, height: 120, opacity: .12, backgroundImage: "radial-gradient(circle,#2A7F62 1px,transparent 1px)", backgroundSize: "16px 16px" }} />
 
-          <section style={{ borderTop: "1px solid #EEECE8", borderBottom: "1px solid #EEECE8" }}>
-            <div style={{ ...sty.wrap, display: "grid", gridTemplateColumns: "repeat(3,1fr)" }}>
-              {L.stats.map((s, i) => (
-                <div key={i} style={{ padding: "32px 0", textAlign: "center", borderInlineStart: i > 0 ? "1px solid #EEECE8" : "none" }}>
-                  <div style={{ fontSize: 32, fontWeight: 800, color: "#2A7F62", marginBottom: 4 }}>{s.val}</div>
-                  <div style={{ fontSize: 13, color: "#999" }}>{s.label}</div>
+          <div style={{ ...W, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, alignItems: "center", width: "100%" }}>
+            <div style={{ order: rtl?2:1 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 24, background: "linear-gradient(135deg,rgba(42,127,98,.08),rgba(42,127,98,.04))", border: "1px solid rgba(42,127,98,.12)", marginBottom: 24, opacity: heroIn?1:0, transform: heroIn?"translateY(0)":"translateY(16px)", transition: "all .6s ease .1s" }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#2A7F62", animation: "pulse 2s infinite" }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#2A7F62", letterSpacing: 1.5, textTransform: "uppercase" }}>{L.hero.badge}</span>
+              </div>
+              <h1 style={{ fontFamily: "'Playfair Display','Tajawal',serif", fontSize: "clamp(40px,5.5vw,64px)", fontWeight: 600, lineHeight: 1.1, marginBottom: 20, letterSpacing: "-1px", opacity: heroIn?1:0, transform: heroIn?"translateY(0)":"translateY(24px)", transition: "all .7s ease .2s" }}>
+                {L.hero.h1a}<br /><span style={{ background: "linear-gradient(135deg,#2A7F62,#1a5c45)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{L.hero.h1b}</span>
+              </h1>
+              <p style={{ fontSize: 17, color: "#777", maxWidth: 420, lineHeight: 1.85, marginBottom: 36, opacity: heroIn?1:0, transform: heroIn?"translateY(0)":"translateY(20px)", transition: "all .7s ease .35s" }}>{L.hero.desc}</p>
+              <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap", opacity: heroIn?1:0, transform: heroIn?"translateY(0)":"translateY(16px)", transition: "all .7s ease .5s" }}>
+                <button onClick={goPlan} style={{ padding: "16px 40px", borderRadius: 12, border: "none", fontSize: 16, fontWeight: 700, background: "#1a1a1a", color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>{L.hero.cta}</button>
+                <span onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })} style={{ fontSize: 14, color: "#999", cursor: "pointer", fontWeight: 500 }}>{L.hero.scroll} ↓</span>
+              </div>
+            </div>
+            <div style={{ order: rtl?1:2, position: "relative", display: "flex", justifyContent: "center", opacity: heroIn?1:0, transform: heroIn?"scale(1)":"scale(0.85)", transition: "all .9s cubic-bezier(.2,0,0,1) .3s" }}>
+              <div style={{ width: "min(380px,90%)", aspectRatio: "1", animation: "float 6s ease-in-out infinite" }}><Globe /></div>
+              {[{ emoji: "🗼", name: rtl?"باريس":"Paris", top: "8%", right: "5%", d: "0s" },
+                { emoji: "⛩️", name: rtl?"طوكيو":"Tokyo", bottom: "15%", left: "0%", d: "1s" },
+                { emoji: "🏙️", name: rtl?"دبي":"Dubai", top: "55%", right: "-5%", d: "2s" }
+              ].map((c, i) => (
+                <div key={i} style={{ position: "absolute", ...(c.top?{top:c.top}:{}), ...(c.bottom?{bottom:c.bottom}:{}), ...(c.left?{left:c.left}:{}), ...(c.right?{right:c.right}:{}), background: "#fff", borderRadius: 12, padding: "10px 16px", boxShadow: "0 4px 20px rgba(0,0,0,.06)", display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, animation: `float 4s ease-in-out ${c.d} infinite`, border: "1px solid rgba(0,0,0,.04)" }}>
+                  <span style={{ fontSize: 20 }}>{c.emoji}</span> {c.name}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* STATS */}
+        <Reveal>
+          <section style={{ borderTop: "1px solid #EEECE8", borderBottom: "1px solid #EEECE8", background: "#fff" }}>
+            <div style={{ ...W, display: "grid", gridTemplateColumns: "repeat(3,1fr)" }}>
+              {L.stats.map((s,i) => (
+                <div key={i} style={{ padding: "36px 0", textAlign: "center", borderInlineStart: i>0?"1px solid #EEECE8":"none" }}>
+                  <div style={{ fontSize: 36, fontWeight: 800, background: "linear-gradient(135deg,#2A7F62,#1a5c45)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6 }}>{s.val}</div>
+                  <div style={{ fontSize: 14, color: "#999" }}>{s.l}</div>
                 </div>
               ))}
             </div>
           </section>
+        </Reveal>
 
-          <section id="how" style={{ padding: "72px 0" }}>
-            <div style={sty.wrap}>
-              <div style={{ textAlign: "center", marginBottom: 48 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 8 }}>{L.how.subtitle}</div>
-                <h2 style={{ fontFamily: "'DM Serif Display','Tajawal',serif", fontSize: 36, fontWeight: 400 }}>{L.how.title}</h2>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 24 }}>
-                {L.how.steps.map((step, i) => (
-                  <div key={i} className="hover-lift" style={{ background: "#fff", border: "1px solid #EEECE8", borderRadius: 16, padding: 28 }}>
-                    <div style={{ fontSize: 36, fontWeight: 800, color: "#E8E6E2", marginBottom: 14, fontFamily: "'DM Sans',sans-serif" }}>{step.num}</div>
-                    <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>{step.title}</div>
-                    <div style={{ fontSize: 14, color: "#888", lineHeight: 1.7 }}>{step.desc}</div>
+        {/* HOW */}
+        <section id="how" style={{ padding: "80px 0" }}>
+          <div style={W}>
+            <Reveal><div style={{ textAlign: "center", marginBottom: 56 }}>
+              <div className="sline" style={{ margin: "0 auto 16px" }} />
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 3, marginBottom: 10 }}>{L.how.sub}</div>
+              <h2 style={{ fontFamily: "'Playfair Display','Tajawal',serif", fontSize: 40, fontWeight: 600 }}>{L.how.title}</h2>
+            </div></Reveal>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20 }}>
+              {L.how.steps.map((s,i) => (
+                <Reveal key={i} delay={i*.12}><div className="clift" style={{ background: "#fff", border: "1px solid #EEECE8", borderRadius: 20, padding: "36px 28px", position: "relative", overflow: "hidden", height: "100%" }}>
+                  <div style={{ position: "absolute", top: -8, [rtl?"right":"left"]: -4, fontSize: 96, fontWeight: 800, color: "rgba(42,127,98,.04)", fontFamily: "'DM Sans'" }}>{s.n}</div>
+                  <div style={{ position: "relative" }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg,rgba(42,127,98,.1),rgba(42,127,98,.04))", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: "#2A7F62" }}>{s.n}</span>
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{s.t}</div>
+                    <div style={{ fontSize: 14, color: "#888", lineHeight: 1.75 }}>{s.d}</div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section style={{ padding: "0 0 72px" }}>
-            <div style={sty.wrap}>
-              <h2 style={{ fontFamily: "'DM Serif Display','Tajawal',serif", fontSize: 36, fontWeight: 400, textAlign: "center", marginBottom: 40 }}>{L.features.title}</h2>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 }}>
-                {L.features.items.map((f, i) => (
-                  <div key={i} className="hover-lift" style={{ background: "#fff", border: "1px solid #EEECE8", borderRadius: 14, padding: "24px 22px" }}>
-                    <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
-                    <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>{f.title}</div>
-                    <div style={{ fontSize: 13, color: "#888", lineHeight: 1.7 }}>{f.desc}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section style={{ padding: "60px 0", background: "#111", color: "#fff", textAlign: "center" }}>
-            <div style={sty.wrap}>
-              <h2 style={{ fontFamily: "'DM Serif Display','Tajawal',serif", fontSize: 32, fontWeight: 400, marginBottom: 16 }}>{L.ctaSection.title}</h2>
-              <p style={{ color: "#888", marginBottom: 28, fontSize: 15 }}>{L.ctaSection.desc}</p>
-              <button onClick={scrollToPlanner} style={{ padding: "16px 48px", borderRadius: 10, border: "2px solid #fff", fontSize: 16, fontWeight: 700, background: "transparent", color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>{L.hero.cta}</button>
-            </div>
-          </section>
-        </>
-      )}
-
-      {/* PLANNER */}
-      {page === "planner" && !plan && !loading && (
-        <div style={{ ...sty.wrap, paddingTop: 52, paddingBottom: 40 }} className="fu">
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#2A7F62", textTransform: "uppercase", letterSpacing: 2, marginBottom: 10 }}>{L.planner.title}</div>
-          <h1 style={{ fontFamily: "'DM Serif Display','Tajawal',serif", fontSize: 40, fontWeight: 400, marginBottom: 8 }}>{L.hero.h1a}, <span style={{ color: "#bbb" }}>{L.hero.h1b}</span></h1>
-          <p style={{ color: "#999", fontSize: 15, marginBottom: 40, maxWidth: 440 }}>{L.hero.desc}</p>
-
-          <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", letterSpacing: 2, marginBottom: 10, textTransform: "uppercase" }}>{L.planner.destLabel}</div>
-            <input value={dest} onChange={e => setDest(e.target.value)} onKeyDown={e => e.key === "Enter" && generate()}
-              placeholder={L.planner.destPlaceholder}
-              style={{ width: "100%", maxWidth: 460, padding: "14px 18px", borderRadius: 10, border: "2px solid #EEECE8", fontSize: 16, fontFamily: "inherit", color: "#111", background: "#fff", direction: isRTL ? "rtl" : "ltr" }}
-              onFocus={e => e.target.style.borderColor = "#2A7F62"} onBlur={e => e.target.style.borderColor = "#EEECE8"}
-            />
-          </div>
-
-          <div style={{ marginBottom: 36 }}>
-            <div style={{ fontSize: 11, color: "#ccc", marginBottom: 8 }}>{L.planner.popular}</div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {popularDests.map(d => (
-                <button key={d.en} onClick={() => setDest(d[lang])} style={{
-                  padding: "6px 14px", borderRadius: 20, fontSize: 13, cursor: "pointer",
-                  border: dest === d[lang] ? "1.5px solid #1a1a1a" : "1px solid #E8E6E2",
-                  background: dest === d[lang] ? "#1a1a1a" : "#fff", color: dest === d[lang] ? "#fff" : "#666", fontFamily: "inherit",
-                }}>{d.flag} {d[lang]}</button>
+                </div></Reveal>
               ))}
             </div>
           </div>
+        </section>
 
-          <div style={{ marginBottom: 44 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", letterSpacing: 2, marginBottom: 10, textTransform: "uppercase" }}>{L.planner.daysLabel}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <button onClick={() => setDays(Math.max(1, days - 1))} style={{ width: 42, height: 42, borderRadius: 8, border: "1px solid #E8E6E2", background: "#fff", fontSize: 20, cursor: "pointer", color: "#444", fontFamily: "inherit" }}>−</button>
-              <span style={{ fontSize: 36, fontWeight: 800, minWidth: 50, textAlign: "center" }}>{days}</span>
-              <button onClick={() => setDays(Math.min(10, days + 1))} style={{ width: 42, height: 42, borderRadius: 8, border: "1px solid #E8E6E2", background: "#fff", fontSize: 20, cursor: "pointer", color: "#444", fontFamily: "inherit" }}>+</button>
-              <span style={{ fontSize: 14, color: "#aaa" }}>{daysText(days)}</span>
+        {/* FEATURES */}
+        <section style={{ padding: "0 0 80px" }}>
+          <div style={W}>
+            <Reveal><div style={{ textAlign: "center", marginBottom: 48 }}>
+              <div className="sline" style={{ margin: "0 auto 16px" }} />
+              <h2 style={{ fontFamily: "'Playfair Display','Tajawal',serif", fontSize: 40, fontWeight: 600 }}>{L.features.title}</h2>
+            </div></Reveal>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 16 }}>
+              {L.features.items.map((f,i) => (
+                <Reveal key={i} delay={i*.08}><div className="clift" style={{ background: "#fff", border: "1px solid #EEECE8", borderRadius: 18, padding: "28px 24px", height: "100%" }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 14, background: "#FAFAF8", border: "1px solid #EEECE8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, marginBottom: 16 }}>{f.icon}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{f.t}</div>
+                  <div style={{ fontSize: 13, color: "#888", lineHeight: 1.8 }}>{f.d}</div>
+                </div></Reveal>
+              ))}
             </div>
           </div>
+        </section>
 
-          <button onClick={generate} disabled={!dest.trim()} style={{
-            padding: "16px 52px", borderRadius: 10, border: "none", fontSize: 16, fontWeight: 700,
-            background: dest.trim() ? "#1a1a1a" : "#eee", color: dest.trim() ? "#fff" : "#bbb",
-            cursor: dest.trim() ? "pointer" : "not-allowed", fontFamily: "inherit",
-          }}>{L.planner.go}</button>
+        {/* CTA */}
+        <Reveal>
+          <section style={{ margin: "0 32px 80px", borderRadius: 24, padding: "64px 40px", background: "linear-gradient(135deg,#111,#1a2a22)", color: "#fff", textAlign: "center", position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 30% 50%,rgba(42,127,98,.15) 0%,transparent 50%)" }} />
+            <div style={{ position: "relative" }}>
+              <h2 style={{ fontFamily: "'Playfair Display','Tajawal',serif", fontSize: 36, fontWeight: 600, marginBottom: 14 }}>{L.cta.title}</h2>
+              <p style={{ color: "rgba(255,255,255,.5)", marginBottom: 32, fontSize: 16, maxWidth: 400, margin: "0 auto 32px" }}>{L.cta.desc}</p>
+              <button onClick={goPlan} style={{ padding: "16px 48px", borderRadius: 12, border: "2px solid rgba(255,255,255,.2)", fontSize: 16, fontWeight: 700, background: "rgba(255,255,255,.08)", color: "#fff", cursor: "pointer", fontFamily: "inherit", backdropFilter: "blur(8px)" }}>{L.hero.cta}</button>
+            </div>
+          </section>
+        </Reveal>
+      </>}
 
-          {error && <div style={{ marginTop: 20, padding: "14px 18px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, color: "#dc2626", fontSize: 14 }}>{error}</div>}
+      {/* ═══ PLANNER ═══ */}
+      {page==="planner" && !plan && !loading && (
+        <div style={{ ...W, paddingTop: 56, paddingBottom: 60 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}><div className="sline" /><span style={{ fontSize: 12, fontWeight: 700, color: "#2A7F62", textTransform: "uppercase", letterSpacing: 2 }}>{L.planner.title}</span></div>
+          <h1 style={{ fontFamily: "'Playfair Display','Tajawal',serif", fontSize: 42, fontWeight: 600, marginBottom: 8, lineHeight: 1.15 }}>{L.hero.h1a}, <span style={{ color: "#ccc" }}>{L.hero.h1b}</span></h1>
+          <p style={{ color: "#999", fontSize: 15, marginBottom: 44, maxWidth: 460 }}>{L.hero.desc}</p>
+
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", letterSpacing: 2, marginBottom: 10, textTransform: "uppercase" }}>{L.planner.dest}</div>
+            <input value={dest} onChange={e => setDest(e.target.value)} onKeyDown={e => e.key==="Enter" && generate()} placeholder={L.planner.ph}
+              style={{ width: "100%", maxWidth: 480, padding: "16px 20px", borderRadius: 14, border: "2px solid #EEECE8", fontSize: 17, fontFamily: "inherit", color: "#111", background: "#fff", direction: rtl?"rtl":"ltr", boxShadow: "0 2px 12px rgba(0,0,0,.02)", transition: "all .25s" }}
+              onFocus={e => { e.target.style.borderColor="#2A7F62"; e.target.style.boxShadow="0 0 0 4px rgba(42,127,98,.08)"; }}
+              onBlur={e => { e.target.style.borderColor="#EEECE8"; e.target.style.boxShadow="0 2px 12px rgba(0,0,0,.02)"; }} />
+          </div>
+          <div style={{ marginBottom: 40 }}>
+            <div style={{ fontSize: 11, color: "#ccc", marginBottom: 10 }}>{L.planner.pop}</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {DESTS.map(d => (
+                <button key={d.en} className="pill" onClick={() => setDest(d[lang])} style={{ padding: "8px 18px", borderRadius: 24, fontSize: 13, cursor: "pointer", border: dest===d[lang]?"1.5px solid #1a1a1a":"1px solid #E8E6E2", background: dest===d[lang]?"#1a1a1a":"#fff", color: dest===d[lang]?"#fff":"#666", fontFamily: "inherit" }}>{d.flag} {d[lang]}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>{L.planner.days}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <button onClick={() => setDays(Math.max(1,days-1))} style={{ width: 46, height: 46, borderRadius: 12, border: "1.5px solid #E8E6E2", background: "#fff", fontSize: 22, cursor: "pointer", color: "#444", fontFamily: "inherit" }}>−</button>
+              <span style={{ fontSize: 42, fontWeight: 800, minWidth: 55, textAlign: "center" }}>{days}</span>
+              <button onClick={() => setDays(Math.min(10,days+1))} style={{ width: 46, height: 46, borderRadius: 12, border: "1.5px solid #E8E6E2", background: "#fff", fontSize: 22, cursor: "pointer", color: "#444", fontFamily: "inherit" }}>+</button>
+              <span style={{ fontSize: 15, color: "#aaa" }}>{dtxt(days)}</span>
+            </div>
+          </div>
+          <button onClick={generate} disabled={!dest.trim()} style={{ padding: "17px 56px", borderRadius: 14, border: "none", fontSize: 17, fontWeight: 700, background: dest.trim()?"#1a1a1a":"#eee", color: dest.trim()?"#fff":"#bbb", cursor: dest.trim()?"pointer":"not-allowed", fontFamily: "inherit" }}>{L.planner.go}</button>
         </div>
       )}
 
       {/* LOADING */}
-      {page === "planner" && loading && (
-        <div style={{ ...sty.wrap, textAlign: "center", padding: "100px 28px" }} className="fu">
-          <div style={{ width: 36, height: 36, border: "3px solid #eee", borderTopColor: "#2A7F62", borderRadius: "50%", animation: "spin .7s linear infinite", margin: "0 auto 24px" }} />
-          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{L.planner.loading} {dest}</div>
-          <div style={{ fontSize: 14, color: "#999", animation: "pulse 2s infinite" }}>{progress}</div>
+      {page==="planner" && loading && (
+        <div style={{ ...W, textAlign: "center", padding: "120px 32px" }}>
+          <div style={{ width: 40, height: 40, border: "3px solid #eee", borderTopColor: "#2A7F62", borderRadius: "50%", animation: "spin .7s linear infinite", margin: "0 auto 28px" }} />
+          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>{L.planner.loading} {dest}</div>
+          <div style={{ fontSize: 14, color: "#999", animation: "pulse 2s infinite" }}>{L.planner.searching}</div>
         </div>
       )}
 
       {/* RESULTS */}
-      {page === "planner" && plan && !loading && (
-        <div style={sty.wrap}>
-          <div className="fu fu1" style={{ padding: "44px 0 32px", borderBottom: "1px solid #EEECE8" }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#2A7F62", textTransform: "uppercase", letterSpacing: 2, marginBottom: 8 }}>{L.plan.badge}</div>
-            <h2 style={{ fontFamily: "'DM Serif Display','Tajawal',serif", fontSize: 38, fontWeight: 400, marginBottom: 4 }}>{plan.flag} {plan.destination}</h2>
-            <p style={{ fontSize: 15, color: "#888" }}>{daysText(sched.length)} • {plan.country}</p>
-          </div>
+      {page==="planner" && plan && !loading && (
+        <div style={W}>
+          <Reveal><div style={{ padding: "48px 0 36px", borderBottom: "1px solid #EEECE8" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><div className="sline" /><span style={{ fontSize: 12, fontWeight: 600, color: "#2A7F62", textTransform: "uppercase", letterSpacing: 2 }}>{L.plan.badge}</span></div>
+            <h2 style={{ fontFamily: "'Playfair Display','Tajawal',serif", fontSize: 42, fontWeight: 600, marginBottom: 6 }}>{plan.flag} {plan.destination}</h2>
+            <p style={{ fontSize: 16, color: "#888" }}>{dtxt(sched.length)} • {plan.country}</p>
+          </div></Reveal>
 
-          <div className="fu fu2" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", borderBottom: "1px solid #EEECE8" }}>
-            {[ { l: L.plan.currency, v: plan.currency }, { l: L.plan.weather, v: plan.weather }, { l: L.plan.bestTime, v: plan.bestTime }, { l: L.plan.language, v: plan.language }, { l: L.plan.visa, v: plan.visa }, { l: L.plan.timezone, v: plan.timezone } ].map((info, i) => (
-              <div key={i} style={{ padding: "18px 4px", borderInlineStart: i % 3 !== 0 ? "1px solid #f0f0f0" : "none" }}>
-                <div style={{ fontSize: 10, color: "#bbb", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>{info.l}</div>
-                <div style={{ fontSize: 13, color: "#333", fontWeight: 500 }}>{info.v}</div>
+          <Reveal delay={.1}><div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", borderBottom: "1px solid #EEECE8" }}>
+            {[{l:L.plan.currency,v:plan.currency},{l:L.plan.weather,v:plan.weather},{l:L.plan.best,v:plan.bestTime},{l:L.plan.language,v:plan.language},{l:L.plan.visa,v:plan.visa},{l:L.plan.tz,v:plan.timezone}].map((x,i) => (
+              <div key={i} style={{ padding: "20px 6px", borderInlineStart: i%3?"1px solid #f0f0f0":"none" }}>
+                <div style={{ fontSize: 10, color: "#bbb", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>{x.l}</div>
+                <div style={{ fontSize: 13, color: "#333", fontWeight: 500 }}>{x.v}</div>
               </div>
             ))}
-          </div>
+          </div></Reveal>
 
-          <div className="fu fu3" style={{ padding: "32px 0", borderBottom: "1px solid #EEECE8" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+          {/* Hotels */}
+          <Reveal delay={.15}><div style={{ padding: "36px 0", borderBottom: "1px solid #EEECE8" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 10 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2 }}>{L.plan.hotels}</div>
-              <div style={{ display: "flex", gap: 5 }}>
-                {["budget", "mid", "luxury"].map(ti => (
-                  <button key={ti} onClick={() => setTier(ti)} style={{
-                    padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
-                    border: tier === ti ? "1.5px solid #1a1a1a" : "1px solid #E8E6E2",
-                    background: tier === ti ? "#1a1a1a" : "#fff", color: tier === ti ? "#fff" : "#888", fontFamily: "inherit",
-                  }}>{L.tiers[ti]}</button>
+              <div style={{ display: "flex", gap: 6 }}>
+                {["budget","mid","luxury"].map(ti => (
+                  <button key={ti} onClick={() => setTier(ti)} style={{ padding: "6px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", border: tier===ti?"1.5px solid #1a1a1a":"1px solid #E8E6E2", background: tier===ti?"#1a1a1a":"#fff", color: tier===ti?"#fff":"#888", fontFamily: "inherit" }}>{L.tiers[ti]}</button>
                 ))}
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(210px,1fr))", gap: 12 }}>
-              {hotels.map((h, i) => (
-                <div key={i} className="hover-lift" style={{ border: "1px solid #EEECE8", borderRadius: 12, padding: 18, background: "#fff" }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 2 }}>{h.name}</div>
-                  <div style={{ fontSize: 12, color: "#999", marginBottom: 10 }}>{h.area}{h.desc ? ` — ${h.desc}` : ""}</div>
-                  <span style={{ fontSize: 22, fontWeight: 800 }}>${h.pricePerNight}</span>
-                  <span style={{ fontSize: 12, color: "#bbb" }}> / {L.plan.night}</span>
-                  <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>${(h.pricePerNight * days).toLocaleString()} {L.plan.total}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 14 }}>
+              {hotels.map((h,i) => (
+                <div key={i} className="clift" style={{ border: "1px solid #EEECE8", borderRadius: 16, padding: 22, background: "#fff" }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 3 }}>{h.name}</div>
+                  <div style={{ fontSize: 12, color: "#999", marginBottom: 14 }}>{h.area} — {h.desc}</div>
+                  <span style={{ fontSize: 24, fontWeight: 800 }}>${h.pricePerNight}</span><span style={{ fontSize: 12, color: "#bbb" }}> / {L.plan.night}</span>
+                  <div style={{ fontSize: 12, color: "#aaa", marginTop: 3 }}>${(h.pricePerNight*days).toLocaleString()} {L.plan.total}</div>
                 </div>
               ))}
             </div>
-          </div>
+          </div></Reveal>
 
-          <div className="fu fu4" style={{ padding: "32px 0", borderBottom: "1px solid #EEECE8" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 20 }}>{L.plan.schedule}</div>
-            {sched.map((d, idx) => (
-              <div key={idx} style={{ marginBottom: 24, paddingBottom: 24, borderBottom: idx < sched.length - 1 ? "1px solid #f5f5f5" : "none" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: "#1a1a1a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 15, flexShrink: 0 }}>{d.day || idx + 1}</div>
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 700 }}>{d.title}</div>
-                    <div style={{ fontSize: 12, color: "#bbb" }}>{idx === 0 ? L.plan.arrival : idx === sched.length - 1 ? L.plan.lastDay : `${L.plan.dayN} ${idx + 1}`}</div>
+          {/* Schedule */}
+          <div style={{ padding: "36px 0", borderBottom: "1px solid #EEECE8" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 22 }}>{L.plan.sched}</div>
+            {sched.map((d,idx) => (
+              <Reveal key={idx} delay={idx*.06}>
+                <div style={{ marginBottom: 26, paddingBottom: 26, borderBottom: idx<sched.length-1?"1px solid #f5f5f3":"none" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg,#1a1a1a,#333)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 16, flexShrink: 0 }}>{d.day}</div>
+                    <div><div style={{ fontSize: 17, fontWeight: 700 }}>{d.title}</div><div style={{ fontSize: 12, color: "#bbb" }}>{idx===0?L.plan.arrive:idx===sched.length-1?L.plan.last:`${L.plan.dayN} ${idx+1}`}</div></div>
                   </div>
-                </div>
-                <div style={{ display: "grid", gap: 1, background: "#f5f5f5", borderRadius: 12, overflow: "hidden" }}>
-                  {[ { icon: "☀️", label: L.plan.morning, data: d.morning }, { icon: "☁️", label: L.plan.afternoon, data: d.afternoon }, { icon: "🌙", label: L.plan.evening, data: d.evening } ].map((p, pi) => (
-                    <div key={pi} style={{ display: "flex", gap: 12, padding: "13px 16px", background: "#fff", alignItems: "flex-start" }}>
-                      <span style={{ fontSize: 16, marginTop: 1 }}>{p.icon}</span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 10, color: "#bbb", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 2 }}>{p.label}</div>
-                        <div style={{ fontSize: 14, color: "#222", lineHeight: 1.6 }}>{p.data?.activity || p.data}</div>
+                  <div style={{ display: "grid", gap: 1, background: "#f0efed", borderRadius: 14, overflow: "hidden" }}>
+                    {[{i:"☀️",l:L.plan.am,d:d.morning},{i:"☁️",l:L.plan.pm,d:d.afternoon},{i:"🌙",l:L.plan.eve,d:d.evening}].map((p,pi) => (
+                      <div key={pi} style={{ display: "flex", gap: 14, padding: "15px 18px", background: "#fff", alignItems: "flex-start" }}>
+                        <span style={{ fontSize: 18, marginTop: 1 }}>{p.i}</span>
+                        <div style={{ flex: 1 }}><div style={{ fontSize: 10, color: "#bbb", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>{p.l}</div><div style={{ fontSize: 14, color: "#222", lineHeight: 1.65 }}>{p.d?.activity||p.d}</div></div>
+                        <div style={{ fontSize: 12, color: p.d?.cost>0?"#2A7F62":"#ddd", fontWeight: 600, marginTop: 16 }}>{p.d?.cost>0?`~$${p.d.cost}`:L.plan.free}</div>
                       </div>
-                      <div style={{ fontSize: 12, color: (p.data?.cost > 0) ? "#2A7F62" : "#ddd", fontWeight: 600, marginTop: 14 }}>
-                        {(p.data?.cost > 0) ? `~$${p.data.cost}` : L.plan.free}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {d.restaurant && (
-                  <div style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 14px", background: "#FAFAF8", border: "1px solid #EEECE8", borderRadius: 8, fontSize: 13, color: "#666" }}>
-                    🍽️ <span style={{ fontWeight: 600 }}>{d.restaurant.name}</span>
-                    <span style={{ color: "#ddd" }}>•</span>
-                    <span style={{ color: "#999" }}>{d.restaurant.cuisine}</span>
-                    <span style={{ color: "#2A7F62", fontWeight: 600 }}>{d.restaurant.priceLevel}</span>
+                    ))}
                   </div>
-                )}
-              </div>
+                  {d.restaurant && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 16px", background: "#fff", border: "1px solid #EEECE8", borderRadius: 10, fontSize: 13, color: "#666" }}>🍽️ <span style={{ fontWeight: 600 }}>{d.restaurant.name}</span> <span style={{ color: "#ddd" }}>•</span> <span style={{ color: "#999" }}>{d.restaurant.cuisine}</span> <span style={{ color: "#2A7F62", fontWeight: 600 }}>{d.restaurant.priceLevel}</span></div>}
+                </div>
+              </Reveal>
             ))}
           </div>
 
-          <div className="fu fu5" style={{ padding: "32px 0", borderBottom: "1px solid #EEECE8" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 16 }}>{L.plan.budget} — {L.tiers[tier]}</div>
-            <div style={{ borderRadius: 12, border: "1px solid #EEECE8", overflow: "hidden" }}>
-              {[ { l: L.plan.hotelCat, v: bd.hotel||0, d: `${days} ${L.plan.nights}` }, { l: L.plan.activities, v: bd.activities||0, d: `${sched.length} ${L.plan.days}` }, { l: L.plan.food, v: bd.food||0, d: `${days} ${L.plan.days}` }, { l: L.plan.transport, v: bd.transport||0, d: `${days} ${L.plan.days}` } ].map((r, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 20px", borderBottom: "1px solid #f5f5f5", background: "#fff" }}>
+          {/* Budget */}
+          <Reveal delay={.1}><div style={{ padding: "36px 0", borderBottom: "1px solid #EEECE8" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 18 }}>{L.plan.budget} — {L.tiers[tier]}</div>
+            <div style={{ borderRadius: 16, border: "1px solid #EEECE8", overflow: "hidden" }}>
+              {[{l:L.plan.hotelC,v:bd.hotel||0,d:`${days} ${L.plan.nights}`},{l:L.plan.act,v:bd.activities||0,d:`${sched.length} ${L.plan.daysL}`},{l:L.plan.food,v:bd.food||0,d:`${days} ${L.plan.daysL}`},{l:L.plan.trans,v:bd.transport||0,d:`${days} ${L.plan.daysL}`}].map((r,i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 22px", borderBottom: "1px solid #f5f5f3", background: "#fff" }}>
                   <div><div style={{ fontSize: 14, fontWeight: 500 }}>{r.l}</div><div style={{ fontSize: 11, color: "#bbb" }}>{r.d}</div></div>
-                  <div style={{ fontSize: 16, fontWeight: 700 }}>${r.v.toLocaleString()}</div>
+                  <div style={{ fontSize: 17, fontWeight: 700 }}>${r.v.toLocaleString()}</div>
                 </div>
               ))}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 20px", background: "#1a1a1a", color: "#fff" }}>
-                <div style={{ fontSize: 15, fontWeight: 600 }}>{L.plan.grandTotal}</div>
-                <div style={{ fontSize: 28, fontWeight: 800 }}>${total.toLocaleString()}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 22px", background: "linear-gradient(135deg,#111,#1a2a22)", color: "#fff" }}>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{L.plan.grand}</div>
+                <div style={{ fontSize: 30, fontWeight: 800 }}>${tot.toLocaleString()}</div>
               </div>
             </div>
-            <div style={{ fontSize: 12, color: "#bbb", marginTop: 10 }}>{L.plan.note}</div>
-          </div>
+            <div style={{ fontSize: 12, color: "#bbb", marginTop: 12 }}>{L.plan.note}</div>
+          </div></Reveal>
 
-          <div className="fu" style={{ padding: "32px 0", borderBottom: "1px solid #EEECE8" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 16 }}>{L.plan.tips}</div>
-            {(plan.tips || []).map((tip, i) => (
-              <div key={i} style={{ display: "flex", gap: 14, padding: "11px 0", borderBottom: i < (plan.tips || []).length - 1 ? "1px solid #f5f5f5" : "none" }}>
-                <div style={{ width: 26, height: 26, borderRadius: 7, background: "#f5f5f3", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#999", flexShrink: 0 }}>{i + 1}</div>
-                <div style={{ fontSize: 14, color: "#444", lineHeight: 1.7 }}>{tip}</div>
+          {/* Tips */}
+          <Reveal delay={.1}><div style={{ padding: "36px 0", borderBottom: "1px solid #EEECE8" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: 2, marginBottom: 18 }}>{L.plan.tips}</div>
+            {plan.tips.map((tip,i) => (
+              <div key={i} style={{ display: "flex", gap: 14, padding: "13px 0", borderBottom: i<plan.tips.length-1?"1px solid #f5f5f3":"none" }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,rgba(42,127,98,.08),rgba(42,127,98,.03))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#2A7F62", flexShrink: 0 }}>{i+1}</div>
+                <div style={{ fontSize: 14, color: "#444", lineHeight: 1.75 }}>{tip}</div>
               </div>
             ))}
-          </div>
+          </div></Reveal>
 
-          <div style={{ textAlign: "center", padding: "32px 0" }}>
-            <div style={{ fontSize: 12, color: "#ccc", marginBottom: 16 }}>{L.plan.sourceNote}</div>
-            <button onClick={reset} style={{ padding: "14px 44px", borderRadius: 10, border: "1px solid #ddd", background: "#fff", fontSize: 15, fontWeight: 600, color: "#666", cursor: "pointer", fontFamily: "inherit" }}>{L.plan.newTrip}</button>
+          <div style={{ textAlign: "center", padding: "36px 0" }}>
+            <div style={{ fontSize: 12, color: "#ccc", marginBottom: 18 }}>{L.plan.src}</div>
+            <button onClick={reset} style={{ padding: "14px 44px", borderRadius: 12, border: "1.5px solid #ddd", background: "#fff", fontSize: 15, fontWeight: 600, color: "#666", cursor: "pointer", fontFamily: "inherit" }}>{L.plan.newTrip}</button>
           </div>
         </div>
       )}
 
       {/* FOOTER */}
-      <footer style={{ borderTop: "1px solid #EEECE8", padding: "24px 0" }}>
-        <div style={{ ...sty.wrap, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#ccc" }}>TripWall</div>
-          <div style={{ fontSize: 11, color: "#ccc" }}>© 2026 — {L.footer.powered}</div>
+      <footer style={{ borderTop: "1px solid #EEECE8", padding: "28px 0", background: "#fff" }}>
+        <div style={{ ...W, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 24, height: 24, borderRadius: 6, background: "linear-gradient(135deg,#2A7F62,#1a5c45)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 10, fontWeight: 800 }}>T</div>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#bbb" }}>TripWall</span>
+          </div>
+          <div style={{ fontSize: 11, color: "#ccc" }}>© 2026 — {L.footer}</div>
         </div>
       </footer>
     </div>
