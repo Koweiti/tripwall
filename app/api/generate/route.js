@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+// Allow longer execution time on Vercel
+export const maxDuration = 60;
+
 export async function POST(request) {
   try {
     const { destination, days, lang, currency } = await request.json();
@@ -16,39 +19,38 @@ export async function POST(request) {
     const outputLang = lang === "ar" ? "Arabic" : "English";
     const currencyCode = currency || "USD";
 
-    const prompt = `You are a world-class professional travel planner. Create a COMPREHENSIVE travel plan for "${destination}" for ${days} days.
+    const prompt = `You are a professional travel planner. Create a complete travel plan for "${destination}" for ${days} days.
 
-Search the web extensively for the LATEST and BEST rated information about this destination.
+Search the web for the LATEST info about this destination.
 
-IMPORTANT: All prices must be in ${currencyCode}. Convert from USD if needed using current exchange rates.
+IMPORTANT: All prices in ${currencyCode}. Return ONLY valid JSON (no markdown, no backticks):
 
-Return ONLY valid JSON (no markdown, no backticks) with this structure:
 {
-  "destination": "city name in ${outputLang}",
+  "destination": "city in ${outputLang}",
   "country": "country in ${outputLang}",
   "currency": "code and name in ${outputLang}",
   "flag": "emoji",
-  "weather": "detailed weather description in ${outputLang}",
-  "bestTime": "best months to visit in ${outputLang}",
+  "weather": "brief in ${outputLang}",
+  "bestTime": "months in ${outputLang}",
   "language": "in ${outputLang}",
-  "visa": "detailed visa info in ${outputLang}",
+  "visa": "info in ${outputLang}",
   "timezone": "GMT offset",
   "priceCurrency": "${currencyCode}",
   "hotels": {
-    "luxury": [{"name":"","area":"","desc":"short description","rating":"e.g. 9.2/10","pricePerNight":0}],
+    "luxury": [{"name":"","area":"","desc":"","rating":"9.2/10","pricePerNight":0}],
     "mid": [{"name":"","area":"","desc":"","rating":"","pricePerNight":0}],
     "budget": [{"name":"","area":"","desc":"","rating":"","pricePerNight":0}]
   },
   "topAttractions": [
-    {"name":"in ${outputLang}","desc":"brief in ${outputLang}","cost":0,"duration":"e.g. 2-3 hours"}
+    {"name":"in ${outputLang}","desc":"brief in ${outputLang}","cost":0,"duration":"2-3h"}
   ],
   "schedule": [
-    {"day":1,"title":"in ${outputLang}","morning":{"activity":"detailed in ${outputLang}","location":"specific place","cost":0},"afternoon":{"activity":"","location":"","cost":0},"evening":{"activity":"","location":"","cost":0},"restaurant":{"name":"real name","cuisine":"in ${outputLang}","priceLevel":"$$$","rating":"e.g. 4.5/5"}}
+    {"day":1,"title":"in ${outputLang}","morning":{"activity":"in ${outputLang}","cost":0},"afternoon":{"activity":"","cost":0},"evening":{"activity":"","cost":0},"restaurant":{"name":"real name","cuisine":"in ${outputLang}","priceLevel":"$$$","rating":"4.5/5"}}
   ],
   "topRestaurants": [
-    {"name":"real name","cuisine":"in ${outputLang}","priceLevel":"$$","area":"neighborhood","rating":"e.g. 4.7/5","specialty":"signature dish in ${outputLang}"}
+    {"name":"","cuisine":"in ${outputLang}","priceLevel":"$$","area":"","rating":"4.7/5","specialty":"in ${outputLang}"}
   ],
-  "tips": ["tip in ${outputLang}"],
+  "tips": ["in ${outputLang}"],
   "budgetEstimate": {
     "luxury": {"hotel":0,"food":0,"activities":0,"transport":0},
     "mid": {"hotel":0,"food":0,"activities":0,"transport":0},
@@ -57,50 +59,59 @@ Return ONLY valid JSON (no markdown, no backticks) with this structure:
 }
 
 RULES:
-- Search for REAL current top-rated hotels, restaurants, attractions
-- 5 hotels per tier (luxury, mid, budget) with REAL ratings and prices in ${currencyCode}
-- 8 top attractions with costs and durations
-- Exactly ${days} days in schedule with DETAILED activities and specific locations
-- Each day must have a DIFFERENT real restaurant with rating
-- 8 top standalone restaurants (separate from daily schedule)
-- ALL text in ${outputLang}
-- ALL prices in ${currencyCode} (convert using current rates)
-- Budget totals for all ${days} days in ${currencyCode}
-- 8 practical travel tips
-- Include ratings for hotels and restaurants
-- ONLY JSON, nothing else`;
+- 4 hotels per tier with ratings and prices in ${currencyCode}
+- 6 top attractions with cost and duration
+- ${days} days in schedule, each with a different real restaurant
+- 6 top restaurants with ratings and specialties
+- 7 practical tips
+- ALL in ${outputLang}, prices in ${currencyCode}
+- ONLY JSON`;
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 16000,
-        tools: [{ type: "web_search_20250305", name: "web_search" }],
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55000);
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Anthropic API error:", response.status, errText);
-      return NextResponse.json({ error: "AI service error" }, { status: 502 });
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 12000,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          messages: [{ role: "user", content: prompt }],
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("Anthropic API error:", response.status, errText);
+        return NextResponse.json({ error: "AI service error" }, { status: 502 });
+      }
+
+      const data = await response.json();
+      const textBlocks = data.content?.filter((b) => b.type === "text").map((b) => b.text).join("") || "";
+      const cleaned = textBlocks.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+
+      if (!cleaned) {
+        return NextResponse.json({ error: "Empty AI response" }, { status: 502 });
+      }
+
+      const plan = JSON.parse(cleaned);
+      return NextResponse.json({ plan });
+    } catch (fetchErr) {
+      clearTimeout(timeout);
+      if (fetchErr.name === "AbortError") {
+        return NextResponse.json({ error: "Request took too long. Try a shorter trip or try again." }, { status: 504 });
+      }
+      throw fetchErr;
     }
-
-    const data = await response.json();
-    const textBlocks = data.content?.filter((b) => b.type === "text").map((b) => b.text).join("") || "";
-    const cleaned = textBlocks.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-
-    if (!cleaned) {
-      return NextResponse.json({ error: "Empty AI response" }, { status: 502 });
-    }
-
-    const plan = JSON.parse(cleaned);
-    return NextResponse.json({ plan });
   } catch (err) {
     console.error("Plan generation error:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
