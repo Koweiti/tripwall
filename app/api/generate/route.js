@@ -1,7 +1,33 @@
 import { NextResponse } from "next/server";
 
-// Allow longer execution time on Vercel
 export const maxDuration = 60;
+
+// ── In-memory cache (persists between requests on same serverless instance) ──
+const cache = new Map();
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+function getCacheKey(destination, days, lang, currency) {
+  return `${destination.toLowerCase().trim()}_${days}_${lang}_${currency}`;
+}
+
+function getFromCache(key) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCache(key, data) {
+  // Limit cache size to prevent memory issues
+  if (cache.size > 200) {
+    const oldest = cache.keys().next().value;
+    cache.delete(oldest);
+  }
+  cache.set(key, { data, timestamp: Date.now() });
+}
 
 export async function POST(request) {
   try {
@@ -16,56 +42,35 @@ export async function POST(request) {
       return NextResponse.json({ error: "API key not configured" }, { status: 500 });
     }
 
+    // ── Check cache first ──
+    const cacheKey = getCacheKey(destination, days, lang, currency);
+    const cached = getFromCache(cacheKey);
+    if (cached) {
+      console.log(`Cache hit: ${cacheKey}`);
+      return NextResponse.json({ plan: cached, cached: true });
+    }
+
+    console.log(`Cache miss: ${cacheKey} — calling API`);
+
     const outputLang = lang === "ar" ? "Arabic" : "English";
     const currencyCode = currency || "USD";
 
-    const prompt = `You are a professional travel planner. Create a complete travel plan for "${destination}" for ${days} days.
+    const prompt = `You are a travel planner. Create a plan for "${destination}" for ${days} days. Search web for latest info. Prices in ${currencyCode}.
 
-Search the web for the LATEST info about this destination.
-
-IMPORTANT: All prices in ${currencyCode}. Return ONLY valid JSON (no markdown, no backticks):
-
+Return ONLY valid JSON:
 {
-  "destination": "city in ${outputLang}",
-  "country": "country in ${outputLang}",
-  "currency": "code and name in ${outputLang}",
-  "flag": "emoji",
-  "weather": "brief in ${outputLang}",
-  "bestTime": "months in ${outputLang}",
-  "language": "in ${outputLang}",
-  "visa": "info in ${outputLang}",
-  "timezone": "GMT offset",
-  "priceCurrency": "${currencyCode}",
-  "hotels": {
-    "luxury": [{"name":"","area":"","desc":"","rating":"9.2/10","pricePerNight":0}],
-    "mid": [{"name":"","area":"","desc":"","rating":"","pricePerNight":0}],
-    "budget": [{"name":"","area":"","desc":"","rating":"","pricePerNight":0}]
-  },
-  "topAttractions": [
-    {"name":"in ${outputLang}","desc":"brief in ${outputLang}","cost":0,"duration":"2-3h"}
-  ],
-  "schedule": [
-    {"day":1,"title":"in ${outputLang}","morning":{"activity":"in ${outputLang}","cost":0},"afternoon":{"activity":"","cost":0},"evening":{"activity":"","cost":0},"restaurant":{"name":"real name","cuisine":"in ${outputLang}","priceLevel":"$$$","rating":"4.5/5"}}
-  ],
-  "topRestaurants": [
-    {"name":"","cuisine":"in ${outputLang}","priceLevel":"$$","area":"","rating":"4.7/5","specialty":"in ${outputLang}"}
-  ],
-  "tips": ["in ${outputLang}"],
-  "budgetEstimate": {
-    "luxury": {"hotel":0,"food":0,"activities":0,"transport":0},
-    "mid": {"hotel":0,"food":0,"activities":0,"transport":0},
-    "budget": {"hotel":0,"food":0,"activities":0,"transport":0}
-  }
+  "destination":"in ${outputLang}","country":"in ${outputLang}","currency":"code+name in ${outputLang}","flag":"emoji",
+  "weather":"brief","bestTime":"months","language":"","visa":"","timezone":"GMT",
+  "priceCurrency":"${currencyCode}",
+  "hotels":{"luxury":[{"name":"","area":"","desc":"","rating":"","pricePerNight":0}],"mid":[same],"budget":[same]},
+  "topAttractions":[{"name":"","desc":"","cost":0,"duration":""}],
+  "schedule":[{"day":1,"title":"","morning":{"activity":"","cost":0},"afternoon":{"activity":"","cost":0},"evening":{"activity":"","cost":0},"restaurant":{"name":"","cuisine":"","priceLevel":"","rating":""}}],
+  "topRestaurants":[{"name":"","cuisine":"","priceLevel":"","area":"","rating":"","specialty":""}],
+  "tips":[],
+  "budgetEstimate":{"luxury":{"hotel":0,"food":0,"activities":0,"transport":0},"mid":{same},"budget":{same}}
 }
 
-RULES:
-- 4 hotels per tier with ratings and prices in ${currencyCode}
-- 6 top attractions with cost and duration
-- ${days} days in schedule, each with a different real restaurant
-- 6 top restaurants with ratings and specialties
-- 7 practical tips
-- ALL in ${outputLang}, prices in ${currencyCode}
-- ONLY JSON`;
+RULES: 4 hotels/tier, 6 attractions, ${days} days schedule, 6 restaurants, 7 tips. ALL ${outputLang}. Prices ${currencyCode}. ONLY JSON.`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 55000);
@@ -79,8 +84,8 @@ RULES:
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 12000,
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 8000,
           tools: [{ type: "web_search_20250305", name: "web_search" }],
           messages: [{ role: "user", content: prompt }],
         }),
@@ -91,7 +96,7 @@ RULES:
 
       if (!response.ok) {
         const errText = await response.text();
-        console.error("Anthropic API error:", response.status, errText);
+        console.error("API error:", response.status, errText);
         return NextResponse.json({ error: "AI service error" }, { status: 502 });
       }
 
@@ -100,20 +105,25 @@ RULES:
       const cleaned = textBlocks.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
 
       if (!cleaned) {
-        return NextResponse.json({ error: "Empty AI response" }, { status: 502 });
+        return NextResponse.json({ error: "Empty response" }, { status: 502 });
       }
 
       const plan = JSON.parse(cleaned);
+
+      // ── Save to cache ──
+      setCache(cacheKey, plan);
+      console.log(`Cached: ${cacheKey}`);
+
       return NextResponse.json({ plan });
     } catch (fetchErr) {
       clearTimeout(timeout);
       if (fetchErr.name === "AbortError") {
-        return NextResponse.json({ error: "Request took too long. Try a shorter trip or try again." }, { status: 504 });
+        return NextResponse.json({ error: "Request timeout. Try again." }, { status: 504 });
       }
       throw fetchErr;
     }
   } catch (err) {
-    console.error("Plan generation error:", err);
+    console.error("Error:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
